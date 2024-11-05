@@ -17,8 +17,7 @@
     flake-utils.lib.eachDefaultSystem 
       (system:
         let 
-          pkgs = nixpkgs.legacyPackages.${system}; 
-        
+          pkgs = nixpkgs.legacyPackages.${system};
         in {
           # Built via `nix build` and run via `nix run`
           # Building as a package not required
