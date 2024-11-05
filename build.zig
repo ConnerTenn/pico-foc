@@ -4,7 +4,7 @@ const Build = std.Build;
 pub fn build(b: *Build) void {
     const target = std.Target.Query{
         .os_tag = .freestanding,
-        .cpu_arch = .aarch64,
+        .cpu_arch = .arm,
         .cpu_model = .{
             .explicit = &std.Target.arm.cpu.cortex_m0plus,
         },
@@ -93,9 +93,10 @@ pub fn build(b: *Build) void {
     }
     // exe.linkLibC();
     // exe.linkSystemLibrary("c");
+    const bin_artifact = b.addInstallArtifact(bin, .{});
 
     const build_step = b.step("build", "Build the application static library");
-    build_step.dependOn(&bin.step);
+    build_step.dependOn(&bin_artifact.step);
 
     //Tests
     const tests = b.addTest(Build.TestOptions{

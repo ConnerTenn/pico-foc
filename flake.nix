@@ -24,11 +24,11 @@
 
           # Entered with `nix develop`
           devShells.default = pkgs.mkShell {
-            packages = with pkgs; [ 
-              gcc
+            packages = with pkgs; [
               zig
               git
               cmake
+              gcc-arm-embedded-13
             ];
           };
         }

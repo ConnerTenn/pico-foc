@@ -20,17 +20,20 @@ serial:
 clean:
 	rm -rf zig-out
 	rm -rf zig-cache
-	rm -rf build/*
+	rm -rf build
 
 
-zig-out/lib/libzig.a:
-	@zig build test && zig build
+zig-out/lib/libbldc.a:
+	@zig build test && zig build build
 	@echo
 
-build/motor-demo.uf2: zig-out/lib/libzig.a
+pico-sdk:
+	git clone https://github.com/raspberrypi/pico-sdk.git
+	cd $@; \
+	git submodule update --init
+
+build/motor-demo.uf2: zig-out/lib/libbldc.a | pico-sdk
 	@mkdir -p build
 	@cd build && PICO_SDK_PATH=$(CURDIR)/pico-sdk cmake .. && make -j 20
-	@rm ./gen/pico/*
-	@cp ./build/generated/pico_base/pico/* ./gen/pico
 	@echo
 	@echo Done

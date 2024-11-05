@@ -7,17 +7,17 @@ set(PICO_SDK_PATH "./pico-sdk")
 
 include(./pico-sdk/pico_sdk_init.cmake)
 
-project(Template C CXX ASM)
+project(motor-demo C CXX ASM)
 pico_sdk_init()
 
-add_executable(Template 
-    # template.c
+add_executable(${PROJECT_NAME} 
+    template.c
 )
 
-pico_enable_stdio_uart(Template 0)
-pico_enable_stdio_usb(Template 1)
+pico_enable_stdio_uart(${PROJECT_NAME} 0)
+pico_enable_stdio_usb(${PROJECT_NAME} 1)
 
 # Add the standard library to the build
-target_link_libraries(Template pico_stdlib ${CMAKE_SOURCE_DIR}/zig-out/lib/libpicozig.a)
+target_link_libraries(${PROJECT_NAME} pico_stdlib)# ${CMAKE_SOURCE_DIR}/zig-out/lib/libbldc.a)
 
-pico_add_extra_outputs(Template)
+pico_add_extra_outputs(${PROJECT_NAME})
