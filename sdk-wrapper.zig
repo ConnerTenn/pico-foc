@@ -1,16 +1,16 @@
-
 const std = @import("std");
 const builtin = @import("builtin");
 
-pub const csdk = import:{
+pub const csdk = import: {
     //Check if currently targeting the RP2040
-    if (builtin.cpu.arch.isThumb()) {
+    if (builtin.cpu.arch.isARM()) {
         //Import the pico SDK headers
         break :import @cImport({
             @cDefine("__unused", "");
-            @cInclude("pico/stdio.h");
-            @cInclude("pico/time.h");
-            @cInclude("hardware/gpio.h");
+            @cInclude("pico/stdlib.h");
+            // @cInclude("pico/stdio.h");
+            // @cInclude("pico/time.h");
+            // @cInclude("hardware/gpio.h");
         });
     }
     //We must be in a test environment

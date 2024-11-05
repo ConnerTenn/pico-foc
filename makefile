@@ -1,7 +1,8 @@
 
 DIR := $(CURDIR)
 
-BIN = motor-demo.uf2
+BUILD_DIR = $(DIR)/build
+BIN = $(BUILD_DIR)/motor-demo.uf2
 PICO_DEV = /dev/disk/by-label/RPI-RP2
 MNT_DIR = /mnt
 
@@ -17,11 +18,12 @@ help:
 env:
 	nix develop -c $$SHELL
 
-build: build/$(BIN)
+.PHONY:build
+build: $(BIN)
 
-program: build/$(BIN)
+program: $(BIN)
 	sudo mount -o uid=$(shell id -u),gid=$(shell id -g) $(PICO_DEV) $(MNT_DIR)
-	cp build/$(BIN) $(MNT_DIR)
+	cp $(BIN) $(MNT_DIR)
 	sudo umount $(MNT_DIR)
 
 serial:
@@ -30,20 +32,28 @@ serial:
 clean:
 	rm -rf zig-out
 	rm -rf zig-cache
-	rm -rf build
+	rm -rf $(BUILD_DIR)
 
+# Build directory
+$(BUILD_DIR):
+	@mkdir -p $(BUILD_DIR)
 
-zig-out/lib/libbldc.a:
-	@zig build test && zig build build
+# Zig build
+zig-out/lib/libbldc.a: *.zig $(BUILD_DIR)/generated/pico_base/pico
+	@zig build test && zig build -freference-trace build
 	@echo
 
+# SDK repo
 pico-sdk:
 	git clone https://github.com/raspberrypi/pico-sdk.git
 	cd $@; \
 	git submodule update --init
 
-build/$(BIN): zig-out/lib/libbldc.a | pico-sdk
-	@mkdir -p build
-	@cd build && PICO_SDK_PATH=$(CURDIR)/pico-sdk cmake .. && make -j 20
+# 
+$(BUILD_DIR)/generated/pico_base/pico: CMakeLists.txt | pico-sdk $(BUILD_DIR)
+	@cd $(BUILD_DIR) && PICO_SDK_PATH=$(CURDIR)/pico-sdk cmake .. && make -j 20 blink
+
+$(BIN): zig-out/lib/libbldc.a CMakeLists.txt | pico-sdk $(BUILD_DIR)
+	@cd $(BUILD_DIR) && PICO_SDK_PATH=$(CURDIR)/pico-sdk cmake .. && make -j 20
 	@echo
 	@echo Done
