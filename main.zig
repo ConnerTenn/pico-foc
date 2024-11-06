@@ -1,13 +1,11 @@
-
 const expect = @import("std").testing.expect;
 
 const sdk = @import("sdk-wrapper.zig");
 const csdk = sdk.csdk;
 
-
 export fn main() void {
     //Init prints
-    csdk.stdio_init_all();
+    _ = csdk.stdio_init_all();
 
     //Init GPIO
     csdk.gpio_init(sdk.LED_PIN);
@@ -15,6 +13,7 @@ export fn main() void {
 
     //Blink loop
     while (true) {
+        _ = csdk.printf("Pico!");
         csdk.gpio_put(sdk.LED_PIN, sdk.GPIO_HIGH);
         csdk.sleep_ms(250);
 
@@ -25,8 +24,6 @@ export fn main() void {
     unreachable;
 }
 
-
 test "trivial" {
     try expect(1 == 1);
 }
-

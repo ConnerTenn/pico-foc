@@ -27,6 +27,7 @@ pub fn build(b: *Build) void {
 
     const bin = b.addStaticLibrary(options);
     // bin.linkLibC();
+    // bin.linkSystemLibrary("c");
 
     const includes = [_][]const u8{
         // "./gen",
@@ -67,25 +68,14 @@ pub fn build(b: *Build) void {
         "./pico-sdk/src/common/pico_time/include",
         "./pico-sdk/src/common/pico_usb_reset_interface_headers/include",
         "./pico-sdk/src/common/pico_util/include",
-        "./pico-sdk/src/host/hardware_divider/include",
-        "./pico-sdk/src/host/hardware_gpio/include",
-        "./pico-sdk/src/host/hardware_irq/include",
-        "./pico-sdk/src/host/hardware_sync/include",
-        "./pico-sdk/src/host/hardware_timer/include",
-        "./pico-sdk/src/host/hardware_uart/include",
-        "./pico-sdk/src/host/pico_multicore/include",
-        "./pico-sdk/src/host/pico_platform/include",
-        "./pico-sdk/src/host/pico_runtime/include",
-        "./pico-sdk/src/host/pico_stdio/include",
-        "./pico-sdk/src/host/pico_time_adapter/include",
         "./pico-sdk/src/rp2040/boot_stage2/include",
         "./pico-sdk/src/rp2040/hardware_regs/include",
         "./pico-sdk/src/rp2040/hardware_structs/include",
         "./pico-sdk/src/rp2040/pico_platform/include",
-        "./pico-sdk/src/rp2350/boot_stage2/include",
-        "./pico-sdk/src/rp2350/hardware_regs/include",
-        "./pico-sdk/src/rp2350/hardware_structs/include",
-        "./pico-sdk/src/rp2350/pico_platform/include",
+        // "./pico-sdk/src/rp2350/boot_stage2/include",
+        // "./pico-sdk/src/rp2350/hardware_regs/include",
+        // "./pico-sdk/src/rp2350/hardware_structs/include",
+        // "./pico-sdk/src/rp2350/pico_platform/include",
         "./pico-sdk/src/rp2_common/cmsis/include",
         "./pico-sdk/src/rp2_common/hardware_adc/include",
         "./pico-sdk/src/rp2_common/hardware_base/include",
@@ -155,9 +145,9 @@ pub fn build(b: *Build) void {
         "./pico-sdk/src/rp2_common/pico_time_adapter/include",
         "./pico-sdk/src/rp2_common/pico_unique_id/include",
         "./pico-sdk/src/rp2_common/tinyusb/include",
-        "./pico-sdk/test/pico_test/include",
-        "./build/_deps/picotool-src/lib/include",
-        "./build/_deps/picotool-build/lib/mbedtls/include",
+        // "./pico-sdk/test/pico_test/include",
+        // "./build/_deps/picotool-src/lib/include",
+        // "./build/_deps/picotool-build/lib/mbedtls/include",
 
         // "./pico-sdk/src/common/pico_base_headers/include/pico",
         "./build/generated/pico_base",
@@ -169,8 +159,7 @@ pub fn build(b: *Build) void {
     bin.addIncludePath(.{
         .cwd_relative = "/nix/store/3w7l1k6ip6x0yrl7pfqx7mhpr0j0mrrs-gcc-arm-embedded-13.2.rel1/arm-none-eabi/include",
     });
-    // exe.linkLibC();
-    // exe.linkSystemLibrary("c");
+
     const bin_artifact = b.addInstallArtifact(bin, .{});
 
     const build_step = b.step("build", "Build the application static library");
@@ -182,6 +171,8 @@ pub fn build(b: *Build) void {
         .target = defaultTarget(),
         .root_source_file = b.path("main.zig"),
     });
+    // tests.linkLibC();
+    // tests.linkSystemLibrary("c");
 
     const tests_step = b.step("test", "Run the tests");
     tests_step.dependOn(&tests.step);

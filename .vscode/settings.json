@@ -5,4 +5,7 @@
         "${workspaceFolder}/pico-sdk/src/rp2_common/**",
         "${workspaceFolder}/pico-sdk/src/common/**",
     ],
+    "files.associations": {
+        "stdlib.h": "c"
+    },
 }

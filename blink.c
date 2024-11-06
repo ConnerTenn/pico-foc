@@ -1,10 +1,6 @@
 
-// #include <pico/stdlib.h>
-#include "pico/stdlib.h"
-#include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
-#include <hardware/gpio.h>
+#include "pico/stdlib.h"
 
 #define LED_PIN PICO_DEFAULT_LED_PIN
 #define LED_DELAY_MS 250
