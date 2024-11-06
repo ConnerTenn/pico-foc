@@ -25,9 +25,9 @@ pub fn build(b: *Build) void {
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
     // const mode = b.standardReleaseOptions();
 
-    const bin = b.addStaticLibrary(options);
-    // bin.linkLibC();
-    // bin.linkSystemLibrary("c");
+    const lib = b.addStaticLibrary(options);
+    // lib.linkLibC();
+    // lib.linkSystemLibrary("c");
 
     const includes = [_][]const u8{
         // "./gen",
@@ -149,21 +149,29 @@ pub fn build(b: *Build) void {
         // "./build/_deps/picotool-src/lib/include",
         // "./build/_deps/picotool-build/lib/mbedtls/include",
 
-        // "./pico-sdk/src/common/pico_base_headers/include/pico",
         "./build/generated/pico_base",
     };
 
     inline for (includes) |include| {
-        bin.addIncludePath(b.path(include));
+        lib.addIncludePath(b.path(include));
     }
-    bin.addIncludePath(.{
-        .cwd_relative = "/nix/store/3w7l1k6ip6x0yrl7pfqx7mhpr0j0mrrs-gcc-arm-embedded-13.2.rel1/arm-none-eabi/include",
-    });
 
-    const bin_artifact = b.addInstallArtifact(bin, .{});
+    const arm_includes = [_][]const u8{
+        "/nix/store/3w7l1k6ip6x0yrl7pfqx7mhpr0j0mrrs-gcc-arm-embedded-13.2.rel1/bin/../lib/gcc/arm-none-eabi/13.2.1/include",
+        "/nix/store/3w7l1k6ip6x0yrl7pfqx7mhpr0j0mrrs-gcc-arm-embedded-13.2.rel1/bin/../lib/gcc/arm-none-eabi/13.2.1/include-fixed",
+        "/nix/store/3w7l1k6ip6x0yrl7pfqx7mhpr0j0mrrs-gcc-arm-embedded-13.2.rel1/bin/../lib/gcc/arm-none-eabi/13.2.1/../../../../arm-none-eabi/include",
+    };
+
+    inline for (arm_includes) |include| {
+        lib.addIncludePath(.{
+            .cwd_relative = include,
+        });
+    }
+
+    const lib_artifact = b.addInstallArtifact(lib, .{});
 
     const build_step = b.step("build", "Build the application static library");
-    build_step.dependOn(&bin_artifact.step);
+    build_step.dependOn(&lib_artifact.step);
 
     //Tests
     const tests = b.addTest(Build.TestOptions{
