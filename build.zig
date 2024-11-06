@@ -19,7 +19,7 @@ pub fn build(b: *Build) void {
         .target = b.standardTargetOptions(Build.StandardTargetOptionsArgs{
             .default_target = target,
         }),
-        .root_source_file = b.path("main.zig"),
+        .root_source_file = b.path("src/main.zig"),
     };
     // Standard release options allow the person running `zig build` to select
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
@@ -177,7 +177,7 @@ pub fn build(b: *Build) void {
     const tests = b.addTest(Build.TestOptions{
         .name = "tests",
         .target = defaultTarget(),
-        .root_source_file = b.path("main.zig"),
+        .root_source_file = b.path("src/main.zig"),
     });
     // tests.linkLibC();
     // tests.linkSystemLibrary("c");
