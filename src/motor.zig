@@ -84,6 +84,6 @@ pub fn run() noreturn {
         csdk.gpio_put(bldc.LED_PIN, led_toggle);
         led_toggle = !led_toggle;
 
-        csdk.sleep_ms(250);
+        csdk.sleep_ms(5);
     }
 }
