@@ -1,25 +1,26 @@
-const expect = @import("std").testing.expect;
+const bldc = @import("bldc.zig");
+const csdk = bldc.csdk;
 
-const sdk = @import("sdk-wrapper.zig");
-const csdk = sdk.csdk;
+const expect = @import("std").testing.expect;
 
 export fn main() void {
     //Init prints
     _ = csdk.stdio_init_all();
 
     //Init GPIO
-    csdk.gpio_init(sdk.LED_PIN);
-    csdk.gpio_set_dir(sdk.LED_PIN, sdk.GPIO_OUT);
+    csdk.gpio_init(bldc.LED_PIN);
+    csdk.gpio_set_dir(bldc.LED_PIN, bldc.GPIO_OUT);
 
-    //Blink loop
-    while (true) {
-        _ = csdk.printf("Pico!");
-        csdk.gpio_put(sdk.LED_PIN, sdk.GPIO_HIGH);
-        csdk.sleep_ms(250);
+    bldc.motor.run();
+    // //Blink loop
+    // while (true) {
+    //     _ = csdk.printf("Pico!");
+    //     csdk.gpio_put(sdk.LED_PIN, sdk.GPIO_HIGH);
+    //     csdk.sleep_ms(250);
 
-        csdk.gpio_put(sdk.LED_PIN, sdk.GPIO_LOW);
-        csdk.sleep_ms(250);
-    }
+    //     csdk.gpio_put(sdk.LED_PIN, sdk.GPIO_LOW);
+    //     csdk.sleep_ms(250);
+    // }
 
     unreachable;
 }
