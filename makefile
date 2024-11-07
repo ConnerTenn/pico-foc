@@ -58,8 +58,8 @@ Arduino-FOC:
 
 # == CMAKE rules ==
 test: $(BUILD_DIR)/generated/pico_base/pico
-$(BUILD_DIR)/generated/pico_base/pico: CMakeLists.txt | pico-sdk Arduino-FOC $(BUILD_DIR)
-	@cd $(BUILD_DIR) && PICO_SDK_PATH=$(CURDIR)/pico-sdk cmake .. && make -j 20 blink
+$(BUILD_DIR)/generated/pico_base/pico: CMakeLists.txt | pico-sdk $(BUILD_DIR)
+	@cd $(BUILD_DIR) && PICO_SDK_PATH=$(CURDIR)/pico-sdk cmake .. && make -j 20 depend
 
 $(BIN): zig-out/lib/libbldc.a CMakeLists.txt | pico-sdk Arduino-FOC $(BUILD_DIR)
 	@cd $(BUILD_DIR) && PICO_SDK_PATH=$(CURDIR)/pico-sdk cmake .. && make -j 20 motor-demo

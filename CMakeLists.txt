@@ -9,13 +9,6 @@ set(PICO_SDK_PATH "./pico-sdk")
 include(./pico-sdk/pico_sdk_init.cmake)
 pico_sdk_init()
 
-# == Headers ==
-# A project just to generate the version header files
-project(blink C CXX ASM)
-add_executable(${PROJECT_NAME} src/blink.c)
-target_link_libraries(${PROJECT_NAME} pico_stdlib)
-pico_add_extra_outputs(${PROJECT_NAME})
-
 
 #== Application ==
 project(motor-demo C CXX ASM)
