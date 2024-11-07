@@ -60,6 +60,7 @@ pub const csdk = import: {
             // @cInclude("hardware/gpio.h");
             @cInclude("stdio.h");
             @cInclude("pico/stdlib.h");
+            @cInclude("hardware/clocks.h");
             // @cInclude("pico/time.h");
         });
     }

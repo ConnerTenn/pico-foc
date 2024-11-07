@@ -27,7 +27,7 @@ program: $(BIN)
 	sudo umount $(MNT_DIR)
 
 serial:
-	sudo picocom -b 115200 /dev/ttyACM0
+	sudo picocom -b 115200 /dev/ttyACM0 --imap lfcrlf
 
 clean:
 	rm -rf zig-out
