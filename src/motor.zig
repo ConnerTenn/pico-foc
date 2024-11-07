@@ -31,7 +31,7 @@ const PinPair = struct {
     h_pin: DriverPins,
     l_pin: DriverPins,
 
-    fn setTristate(self: Self, tristate: Tristate) void {
+    inline fn setTristate(self: Self, tristate: Tristate) void {
         csdk.gpio_put(@intFromEnum(self.h_pin), switch (tristate) {
             .low => bldc.GPIO_LOW,
             .high => bldc.GPIO_HIGH,
@@ -68,7 +68,10 @@ pub fn run() noreturn {
     DriverPins.init();
 
     var state_idx: u8 = 0;
-    var led_toggle = bldc.GPIO_HIGH;
+    // var led_toggle = bldc.GPIO_HIGH;
+    // _ = led_toggle; // autofix
+
+    var delay: u64 = 6000;
 
     while (true) {
         const phase = sequence[state_idx];
@@ -81,9 +84,12 @@ pub fn run() noreturn {
             state_idx = 0;
         }
 
-        csdk.gpio_put(bldc.LED_PIN, led_toggle);
-        led_toggle = !led_toggle;
+        // csdk.gpio_put(bldc.LED_PIN, led_toggle);
+        // led_toggle = !led_toggle;
 
-        csdk.sleep_ms(5);
+        csdk.sleep_us(delay);
+        if (delay > 2000) {
+            delay -= 5;
+        }
     }
 }
