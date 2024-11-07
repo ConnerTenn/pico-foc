@@ -1,5 +1,7 @@
 
 build/
-pico-sdk/
 zig-cache/
 zig-out/
+
+pico-sdk/
+Arduino-FOC/

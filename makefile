@@ -34,6 +34,10 @@ clean:
 	rm -rf zig-cache
 	rm -rf $(BUILD_DIR)
 
+clean-all: clean
+	rm -rf pico-sdk
+	rm -rf Arduino-FOC
+
 # Build directory
 $(BUILD_DIR):
 	@mkdir -p $(BUILD_DIR)
@@ -43,17 +47,22 @@ zig-out/lib/libbldc.a: *.zig $(BUILD_DIR)/generated/pico_base/pico
 	@zig build test && zig build -freference-trace build
 	@echo
 
-# SDK repo
+# == Repos ==
 pico-sdk:
 	git clone https://github.com/raspberrypi/pico-sdk.git
 	cd $@; \
 	git submodule update --init
 
-# 
-$(BUILD_DIR)/generated/pico_base/pico: CMakeLists.txt | pico-sdk $(BUILD_DIR)
+Arduino-FOC:
+	git clone https://github.com/simplefoc/Arduino-FOC.git
+
+# == CMAKE rules ==
+test: $(BUILD_DIR)/generated/pico_base/pico
+$(BUILD_DIR)/generated/pico_base/pico: CMakeLists.txt | pico-sdk Arduino-FOC $(BUILD_DIR)
 	@cd $(BUILD_DIR) && PICO_SDK_PATH=$(CURDIR)/pico-sdk cmake .. && make -j 20 blink
 
-$(BIN): zig-out/lib/libbldc.a CMakeLists.txt | pico-sdk $(BUILD_DIR)
+$(BIN): zig-out/lib/libbldc.a CMakeLists.txt | pico-sdk Arduino-FOC $(BUILD_DIR)
 	@cd $(BUILD_DIR) && PICO_SDK_PATH=$(CURDIR)/pico-sdk cmake .. && make -j 20 motor-demo
 	@echo
-	@echo Done
+	@echo == Done ==
+	@echo
