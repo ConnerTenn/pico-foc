@@ -1,6 +1,7 @@
 const sdk = @import("sdk-wrapper.zig");
 pub const csdk = sdk.csdk;
 
+pub const stdio = @import("stdio.zig");
 pub const motor = @import("motor.zig");
 pub const pwm = @import("pwm.zig");
 

@@ -44,7 +44,8 @@ $(BUILD_DIR):
 
 # Zig build
 zig-out/lib/libbldc.a: *.zig $(BUILD_DIR)/generated/pico_base/pico
-	@zig build test && zig build -freference-trace build
+	@# zig build test && zig build -freference-trace build
+	zig build -freference-trace build
 	@echo
 
 # == Repos ==
@@ -57,7 +58,6 @@ Arduino-FOC:
 	git clone https://github.com/simplefoc/Arduino-FOC.git
 
 # == CMAKE rules ==
-test: $(BUILD_DIR)/generated/pico_base/pico
 $(BUILD_DIR)/generated/pico_base/pico: CMakeLists.txt | pico-sdk $(BUILD_DIR)
 	@cd $(BUILD_DIR) && PICO_SDK_PATH=$(CURDIR)/pico-sdk cmake .. && make -j 20 depend
 

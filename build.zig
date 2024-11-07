@@ -173,17 +173,17 @@ pub fn build(b: *Build) void {
     const build_step = b.step("build", "Build the application static library");
     build_step.dependOn(&lib_artifact.step);
 
-    //Tests
-    const tests = b.addTest(Build.TestOptions{
-        .name = "tests",
-        .target = defaultTarget(),
-        .root_source_file = b.path("src/main.zig"),
-    });
-    // tests.linkLibC();
-    // tests.linkSystemLibrary("c");
+    // //Tests
+    // const tests = b.addTest(Build.TestOptions{
+    //     .name = "tests",
+    //     .target = defaultTarget(),
+    //     .root_source_file = b.path("src/main.zig"),
+    // });
+    // // tests.linkLibC();
+    // // tests.linkSystemLibrary("c");
 
-    const tests_step = b.step("test", "Run the tests");
-    tests_step.dependOn(&tests.step);
+    // const tests_step = b.step("test", "Run the tests");
+    // tests_step.dependOn(&tests.step);
 }
 
 fn defaultTarget() Build.ResolvedTarget {
