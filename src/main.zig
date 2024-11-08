@@ -26,7 +26,7 @@ export fn main() void {
     //Init prints
     _ = csdk.stdio_init_all();
 
-    csdk.sleep_ms(1000);
+    csdk.sleep_ms(2000);
     stdio.print("== BLDC Demo ==\n", .{});
     printFrequencies();
 

@@ -12,6 +12,7 @@ help:
 	@echo "  build"
 	@echo "  program"
 	@echo "  serial"
+	@echo "  program-then-serial"
 	@echo "  clean"
 	@echo
 
@@ -28,6 +29,11 @@ program: $(BIN)
 
 serial:
 	sudo picocom -b 115200 /dev/ttyACM0 --imap lfcrlf
+
+program-then-serial:
+	$(MAKE) program
+	sleep 1.5
+	$(MAKE) serial
 
 clean:
 	rm -rf zig-out
