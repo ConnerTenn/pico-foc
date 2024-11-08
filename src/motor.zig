@@ -1,13 +1,14 @@
 const bldc = @import("bldc.zig");
 const csdk = bldc.csdk;
+const stdio = bldc.stdio;
 
 const DriverPins = enum(c_uint) {
-    UL = 10,
-    UH = 11,
-    VL = 12,
-    VH = 13,
-    WL = 14,
-    WH = 15,
+    UL = 0,
+    UH = 1,
+    VL = 2,
+    VH = 3,
+    WL = 4,
+    WH = 5,
 
     fn init() void {
         const info = @typeInfo(DriverPins);
@@ -71,10 +72,11 @@ pub fn run() noreturn {
     // var led_toggle = bldc.GPIO_HIGH;
     // _ = led_toggle; // autofix
 
-    var delay: u64 = 6000;
+    var delay: u64 = 10 * 1000;
 
     while (true) {
         const phase = sequence[state_idx];
+        // stdio.print("{d}: {}\n", .{ state_idx, phase });
         Phase.u_pins.setTristate(phase.u);
         Phase.v_pins.setTristate(phase.v);
         Phase.w_pins.setTristate(phase.w);
@@ -88,7 +90,7 @@ pub fn run() noreturn {
         // led_toggle = !led_toggle;
 
         csdk.sleep_us(delay);
-        if (delay > 2000) {
+        if (delay > 1500) {
             delay -= 5;
         }
     }
