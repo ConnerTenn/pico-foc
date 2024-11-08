@@ -34,6 +34,14 @@ export fn main() void {
     csdk.gpio_init(bldc.LED_PIN);
     csdk.gpio_set_dir(bldc.LED_PIN, bldc.GPIO_OUT);
 
+    for (0..31) |gpio| {
+        stdio.print("io [{}] pwm slice:{} pwm chan:{}\n", .{
+            gpio,
+            csdk.pwm_gpio_to_slice_num(gpio),
+            csdk.pwm_gpio_to_channel(gpio),
+        });
+    }
+
     bldc.motor.run();
     // //Blink loop
     // while (true) {
