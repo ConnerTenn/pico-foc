@@ -3,8 +3,8 @@ const csdk = bldc.csdk;
 const stdio = bldc.stdio;
 
 const DriverPins = enum(c_uint) {
-    UL = 10,
-    UH = 11,
+    UL = 8,
+    UH = 9,
     VL = 12,
     VH = 13,
     WL = 14,
