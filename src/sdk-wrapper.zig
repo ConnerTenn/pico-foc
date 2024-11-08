@@ -61,6 +61,7 @@ pub const csdk = import: {
             @cInclude("stdio.h");
             @cInclude("pico/stdlib.h");
             @cInclude("hardware/clocks.h");
+            @cInclude("hardware/pwm.h");
             // @cInclude("pico/time.h");
         });
     }
