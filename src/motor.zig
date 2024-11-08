@@ -3,12 +3,12 @@ const csdk = bldc.csdk;
 const stdio = bldc.stdio;
 
 const DriverPins = enum(c_uint) {
-    UL = 0,
-    UH = 1,
-    VL = 2,
-    VH = 3,
-    WL = 4,
-    WH = 5,
+    UL = 10,
+    UH = 11,
+    VL = 12,
+    VH = 13,
+    WL = 14,
+    WH = 15,
 
     fn init() void {
         const info = @typeInfo(DriverPins);
