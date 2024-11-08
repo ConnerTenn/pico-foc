@@ -35,7 +35,7 @@ clean:
 	rm -rf $(BUILD_DIR)
 
 clean-all: clean
-	rm -rf pico-sdk
+	rm -rf pico-sdk pico-examples
 	rm -rf Arduino-FOC
 
 # Build directory
@@ -49,7 +49,10 @@ zig-out/lib/libbldc.a: *.zig $(BUILD_DIR)/generated/pico_base/pico
 	@echo
 
 # == Repos ==
-pico-sdk:
+pico-examples:
+	git clone https://github.com/raspberrypi/pico-examples.git
+
+pico-sdk: pico-examples
 	git clone https://github.com/raspberrypi/pico-sdk.git
 	cd $@; \
 	git submodule update --init
