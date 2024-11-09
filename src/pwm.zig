@@ -18,8 +18,9 @@ pub const PwmPair = struct {
     pub fn initialize(self: Self) void {
         var config = csdk.pwm_get_default_config();
 
-        csdk.pwm_config_set_output_polarity(&config, false, true);
-        csdk.pwm_config_set_clkdiv_int(&config, 255);
+        csdk.pwm_config_set_output_polarity(&config, true, false);
+        csdk.pwm_config_set_clkdiv_int(&config, 1);
+        csdk.pwm_config_set_phase_correct(&config, true);
 
         csdk.pwm_init(self.slice, &config, false);
 
@@ -66,12 +67,42 @@ pub fn demo() noreturn {
     pwm_v.initialize();
     pwm_w.initialize();
 
-    pwm_u.setLevel(0xffff / 2);
-    pwm_v.setLevel(0xffff / 2);
-    pwm_w.setLevel(0xffff / 2);
+    // csdk.pwm_set_output_polarity(pwm_v.slice, false, true);
+
+    // pwm_u.setLevel(0xffff / 2);
+    // pwm_v.setLevel(0xffff / 2);
+    pwm_w.setLevel(0);
+    // csdk.pwm_set_output_polarity(PwmSlices.slice_w, false, false);
 
     //Enable all pwm signals at once
     csdk.pwm_set_mask_enabled((1 << PwmSlices.slice_u) | (1 << PwmSlices.slice_v) | (1 << PwmSlices.slice_w));
 
-    while (true) {}
+    var dir = enum { forwards, backwards }.forwards;
+
+    var level: u16 = 0;
+    const step = 5;
+
+    while (true) {
+        pwm_u.setLevel(level);
+        pwm_v.setLevel(0xffff - level);
+
+        switch (dir) {
+            .forwards => {
+                level += step;
+
+                if (level == 0xffff) {
+                    dir = .backwards;
+                }
+            },
+            .backwards => {
+                level -= step;
+
+                if (level == 0x0) {
+                    dir = .forwards;
+                }
+            },
+        }
+
+        csdk.sleep_us(200);
+    }
 }
