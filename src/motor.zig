@@ -68,6 +68,30 @@ const sequence = [_]Phase{
 pub fn run() noreturn {
     DriverPins.init();
 
+    // while (true) {
+    //     Phase.u_pins.setTristate(.high);
+    //     Phase.v_pins.setTristate(.low);
+    //     Phase.w_pins.setTristate(.low);
+    //     csdk.sleep_us(1000 * 1000);
+
+    //     Phase.u_pins.setTristate(.low);
+    //     Phase.v_pins.setTristate(.high);
+    //     Phase.w_pins.setTristate(.low);
+    //     csdk.sleep_us(1000 * 1000);
+
+    //     for (0..100000) |_| {
+    //         Phase.u_pins.setTristate(.high);
+    //         Phase.v_pins.setTristate(.low);
+    //         Phase.w_pins.setTristate(.low);
+    //         csdk.sleep_us(10 / 2);
+
+    //         Phase.u_pins.setTristate(.low);
+    //         Phase.v_pins.setTristate(.high);
+    //         Phase.w_pins.setTristate(.low);
+    //         csdk.sleep_us(10 / 2);
+    //     }
+    // }
+
     var state_idx: u8 = 0;
     // var led_toggle = bldc.GPIO_HIGH;
     // _ = led_toggle; // autofix
