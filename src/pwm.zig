@@ -1,6 +1,10 @@
+const std = @import("std");
+const math = std.math;
+
 const bldc = @import("bldc.zig");
 const stdio = bldc.stdio;
 const csdk = bldc.csdk;
+const foc = bldc.foc;
 
 pub const PwmPair = struct {
     const Self = @This();
@@ -42,6 +46,20 @@ const PwmSlices = struct {
     const slice_w: u8 = 7;
 };
 
+fn rescale(T: anytype, val: f32) T {
+    //T must be an unsigned integer
+    //Expects val to be in the domain [-1 : 1]
+    const max_int = math.maxInt(T);
+    return @intFromFloat(@as(f32, @floatFromInt(max_int)) * (val + 1.0) / 2.0);
+}
+
+fn setPwmFromVoltages(pwm_u: PwmPair, pwm_v: PwmPair, pwm_w: PwmPair, voltages: foc.PhaseVoltage) void {
+    stdio.print("{}\n", .{voltages});
+    pwm_u.setLevel(rescale(u16, math.clamp(voltages.u_axis, -1, 1)));
+    pwm_v.setLevel(rescale(u16, math.clamp(voltages.v_axis, -1, 1)));
+    pwm_w.setLevel(rescale(u16, math.clamp(voltages.w_axis, -1, 1)));
+}
+
 pub fn demo() noreturn {
     const pwm_u = PwmPair.create(PwmSlices.slice_u) catch |err| {
         stdio.print("Error {}\n", .{err});
@@ -71,36 +89,21 @@ pub fn demo() noreturn {
 
     // pwm_u.setLevel(0xffff / 2);
     // pwm_v.setLevel(0xffff / 2);
-    pwm_w.setLevel(0);
+    // pwm_w.setLevel(0);
     // csdk.pwm_set_output_polarity(PwmSlices.slice_w, false, false);
 
     //Enable all pwm signals at once
     csdk.pwm_set_mask_enabled((1 << PwmSlices.slice_u) | (1 << PwmSlices.slice_v) | (1 << PwmSlices.slice_w));
 
-    var dir = enum { forwards, backwards }.forwards;
-
-    var level: u16 = 0;
-    const step = 5;
+    var angle: f32 = 0.0;
 
     while (true) {
-        pwm_u.setLevel(level);
-        pwm_v.setLevel(0xffff - level);
+        const voltages = foc.getPhaseVoltage(1, 0, angle);
+        setPwmFromVoltages(pwm_u, pwm_v, pwm_w, voltages);
 
-        switch (dir) {
-            .forwards => {
-                level += step;
-
-                if (level == 0xffff) {
-                    dir = .backwards;
-                }
-            },
-            .backwards => {
-                level -= step;
-
-                if (level == 0x0) {
-                    dir = .forwards;
-                }
-            },
+        angle += 0.0001;
+        if (angle > 2) {
+            angle -= 1.0;
         }
 
         csdk.sleep_us(200);

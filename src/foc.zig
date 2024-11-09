@@ -3,9 +3,9 @@ const math = std.math;
 const tau = std.math.tau;
 
 pub const PhaseVoltage = struct {
-    const u_axis_angle = 0 * tau / 3; //0 deg
-    const v_axis_angle = 1 * tau / 3; //120 deg
-    const w_axis_angle = 2 * tau / 3; //240 deg
+    const u_axis_angle = 0.0 * tau / 3.0; //0 deg
+    const v_axis_angle = 1.0 * tau / 3.0; //120 deg
+    const w_axis_angle = 2.0 * tau / 3.0; //240 deg
 
     u_axis: f32,
     v_axis: f32,
