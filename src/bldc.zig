@@ -4,6 +4,7 @@ pub const csdk = sdk.csdk;
 pub const stdio = @import("stdio.zig");
 pub const motor = @import("motor.zig");
 pub const pwm = @import("pwm.zig");
+pub const foc = @import("foc.zig");
 
 pub const GPIO_IN = false;
 pub const GPIO_OUT = true;
