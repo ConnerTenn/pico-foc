@@ -24,7 +24,7 @@ pub const PwmPair = struct {
 
         csdk.pwm_config_set_output_polarity(&config, true, false);
         csdk.pwm_config_set_clkdiv_int(&config, 1);
-        csdk.pwm_config_set_phase_correct(&config, true);
+        // csdk.pwm_config_set_phase_correct(&config, true);
 
         csdk.pwm_init(self.slice, &config, false);
 
@@ -54,7 +54,7 @@ fn rescale(T: anytype, val: f32) T {
 }
 
 fn setPwmFromVoltages(pwm_u: PwmPair, pwm_v: PwmPair, pwm_w: PwmPair, voltages: foc.PhaseVoltage) void {
-    stdio.print("{}\n", .{voltages});
+    // stdio.print("{}\n", .{voltages});
     pwm_u.setLevel(rescale(u16, math.clamp(voltages.u_axis, -1, 1)));
     pwm_v.setLevel(rescale(u16, math.clamp(voltages.v_axis, -1, 1)));
     pwm_w.setLevel(rescale(u16, math.clamp(voltages.w_axis, -1, 1)));
@@ -95,15 +95,36 @@ pub fn demo() noreturn {
     //Enable all pwm signals at once
     csdk.pwm_set_mask_enabled((1 << PwmSlices.slice_u) | (1 << PwmSlices.slice_v) | (1 << PwmSlices.slice_w));
 
+    setPwmFromVoltages(
+        pwm_u,
+        pwm_v,
+        pwm_w,
+        foc.getPhaseVoltage(1, 0, 0),
+    );
+    csdk.sleep_ms(500);
+
+    const acceleration = 0.00000001;
+    const max_speed = 0.05;
+    var speed: f32 = 0.0;
     var angle: f32 = 0.0;
 
     while (true) {
-        const voltages = foc.getPhaseVoltage(1, 0, angle);
-        setPwmFromVoltages(pwm_u, pwm_v, pwm_w, voltages);
+        setPwmFromVoltages(
+            pwm_u,
+            pwm_v,
+            pwm_w,
+            foc.getPhaseVoltage(1, 0, angle),
+        );
 
-        angle += 0.001;
+        angle += speed;
         angle = @mod(angle, math.tau);
 
-        csdk.sleep_us(200);
+        if (speed < max_speed) {
+            speed += acceleration;
+        } else {
+            speed = max_speed;
+        }
+
+        // csdk.sleep_us(50);
     }
 }
