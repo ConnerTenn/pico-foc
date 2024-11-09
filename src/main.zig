@@ -42,6 +42,7 @@ export fn main() void {
         });
     }
 
+    bldc.pwm.demo();
     bldc.motor.run();
     // //Blink loop
     // while (true) {

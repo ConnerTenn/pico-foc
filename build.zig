@@ -14,7 +14,7 @@ pub fn build(b: *Build) void {
     const options = Build.StaticLibraryOptions{
         .name = "bldc",
         .optimize = b.standardOptimizeOption(Build.StandardOptimizeOptionOptions{
-            .preferred_optimize_mode = .Debug,
+            .preferred_optimize_mode = .ReleaseFast,
         }),
         .target = b.standardTargetOptions(Build.StandardTargetOptionsArgs{
             .default_target = target,
