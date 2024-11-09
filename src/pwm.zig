@@ -101,10 +101,8 @@ pub fn demo() noreturn {
         const voltages = foc.getPhaseVoltage(1, 0, angle);
         setPwmFromVoltages(pwm_u, pwm_v, pwm_w, voltages);
 
-        angle += 0.0001;
-        if (angle > 2) {
-            angle -= 1.0;
-        }
+        angle += 0.001;
+        angle = @mod(angle, math.tau);
 
         csdk.sleep_us(200);
     }
