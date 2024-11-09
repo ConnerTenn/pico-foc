@@ -46,7 +46,7 @@ const PinPair = struct {
     }
 };
 
-const Phase = struct {
+const TristatePhase = struct {
     const u_pins = PinPair{ .h_pin = DriverPins.UH, .l_pin = DriverPins.UL };
     const v_pins = PinPair{ .h_pin = DriverPins.VH, .l_pin = DriverPins.VL };
     const w_pins = PinPair{ .h_pin = DriverPins.WH, .l_pin = DriverPins.WL };
@@ -56,57 +56,31 @@ const Phase = struct {
     w: Tristate,
 };
 
-const sequence = [_]Phase{
-    Phase{ .u = .high, .v = .low, .w = .high_z },
-    Phase{ .u = .high, .v = .high_z, .w = .low },
-    Phase{ .u = .high_z, .v = .high, .w = .low },
-    Phase{ .u = .low, .v = .high, .w = .high_z },
-    Phase{ .u = .low, .v = .high_z, .w = .high },
-    Phase{ .u = .high_z, .v = .low, .w = .high },
+const trapeziod_sequence = [_]TristatePhase{
+    TristatePhase{ .u = .high, .v = .low, .w = .high_z },
+    TristatePhase{ .u = .high, .v = .high_z, .w = .low },
+    TristatePhase{ .u = .high_z, .v = .high, .w = .low },
+    TristatePhase{ .u = .low, .v = .high, .w = .high_z },
+    TristatePhase{ .u = .low, .v = .high_z, .w = .high },
+    TristatePhase{ .u = .high_z, .v = .low, .w = .high },
 };
 
-pub fn run() noreturn {
+pub fn runTristate() noreturn {
     DriverPins.init();
 
-    // while (true) {
-    //     Phase.u_pins.setTristate(.high);
-    //     Phase.v_pins.setTristate(.low);
-    //     Phase.w_pins.setTristate(.low);
-    //     csdk.sleep_us(1000 * 1000);
-
-    //     Phase.u_pins.setTristate(.low);
-    //     Phase.v_pins.setTristate(.high);
-    //     Phase.w_pins.setTristate(.low);
-    //     csdk.sleep_us(1000 * 1000);
-
-    //     for (0..100000) |_| {
-    //         Phase.u_pins.setTristate(.high);
-    //         Phase.v_pins.setTristate(.low);
-    //         Phase.w_pins.setTristate(.low);
-    //         csdk.sleep_us(10 / 2);
-
-    //         Phase.u_pins.setTristate(.low);
-    //         Phase.v_pins.setTristate(.high);
-    //         Phase.w_pins.setTristate(.low);
-    //         csdk.sleep_us(10 / 2);
-    //     }
-    // }
-
     var state_idx: u8 = 0;
-    // var led_toggle = bldc.GPIO_HIGH;
-    // _ = led_toggle; // autofix
 
     var delay: u64 = 10 * 1000;
 
     while (true) {
-        const phase = sequence[state_idx];
+        const phase = trapeziod_sequence[state_idx];
         // stdio.print("{d}: {}\n", .{ state_idx, phase });
-        Phase.u_pins.setTristate(phase.u);
-        Phase.v_pins.setTristate(phase.v);
-        Phase.w_pins.setTristate(phase.w);
+        TristatePhase.u_pins.setTristate(phase.u);
+        TristatePhase.v_pins.setTristate(phase.v);
+        TristatePhase.w_pins.setTristate(phase.w);
 
         state_idx += 1;
-        if (state_idx >= sequence.len) {
+        if (state_idx >= trapeziod_sequence.len) {
             state_idx = 0;
         }
 
@@ -118,4 +92,8 @@ pub fn run() noreturn {
             delay -= 5;
         }
     }
+}
+
+pub fn run() noreturn {
+    runTristate();
 }
