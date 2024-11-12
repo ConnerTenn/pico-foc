@@ -8,6 +8,46 @@ const foc = bldc.foc;
 
 pub const Slice = c_uint;
 
+pub const PwmDriver = struct {
+    const Self = @This();
+
+    u_axis_pins: PwmPair,
+    v_axis_pins: PwmPair,
+    w_axis_pins: PwmPair,
+
+    pub fn create(u_axis_slice: Slice, v_axis_slice: Slice, w_axis_slice: Slice) Self {
+        return Self{
+            .u_axis_pins = PwmPair.create(u_axis_slice),
+            .v_axis_pins = PwmPair.create(v_axis_slice),
+            .w_axis_pins = PwmPair.create(w_axis_slice),
+        };
+    }
+
+    pub fn init(self: Self) void {
+        self.u_axis_pins.init();
+        self.v_axis_pins.init();
+        self.w_axis_pins.init();
+
+        enableSlices(&[_]Slice{
+            self.u_axis_pins.slice,
+            self.v_axis_pins.slice,
+            self.w_axis_pins.slice,
+        });
+    }
+
+    fn setPwmFromVoltages(self: Self, voltages: foc.PhaseVoltage) void {
+        // stdio.print("{}\n", .{voltages});
+        self.u_axis_pins.setLevel(rescaleAsInt(u16, math.clamp(voltages.u_axis, -1, 1)));
+        self.v_axis_pins.setLevel(rescaleAsInt(u16, math.clamp(voltages.v_axis, -1, 1)));
+        self.w_axis_pins.setLevel(rescaleAsInt(u16, math.clamp(voltages.w_axis, -1, 1)));
+    }
+
+    pub fn setTorque(self: Self, direct_torque: f32, tangent_torque: f32, angle: f32) void {
+        const voltages = foc.getPhaseVoltage(direct_torque, tangent_torque, angle);
+        self.setPwmFromVoltages(voltages);
+    }
+};
+
 pub const PwmPair = struct {
     const Self = @This();
 

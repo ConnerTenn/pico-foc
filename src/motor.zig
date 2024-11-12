@@ -10,35 +10,30 @@ const foc = bldc.foc;
 pub const Motor = struct {
     const Self = @This();
 
-    u_axis_pins: pwm.PwmPair,
-    v_axis_pins: pwm.PwmPair,
-    w_axis_pins: pwm.PwmPair,
+    driver: pwm.PwmDriver,
 
     pub fn create(u_axis_slice: pwm.Slice, v_axis_slice: pwm.Slice, w_axis_slice: pwm.Slice) Self {
         return Self{
-            .u_axis_pins = pwm.PwmPair.create(u_axis_slice),
-            .v_axis_pins = pwm.PwmPair.create(v_axis_slice),
-            .w_axis_pins = pwm.PwmPair.create(w_axis_slice),
+            .driver = pwm.PwmDriver.create(u_axis_slice, v_axis_slice, w_axis_slice),
         };
     }
 
     pub fn init(self: Self) void {
-        self.u_axis_pins.init();
-        self.v_axis_pins.init();
-        self.w_axis_pins.init();
-
-        pwm.enableSlices(&[_]pwm.Slice{
-            self.u_axis_pins.slice,
-            self.v_axis_pins.slice,
-            self.w_axis_pins.slice,
-        });
+        self.driver.init();
     }
 
-    pub fn setPwmFromVoltages(self: Self, voltages: foc.PhaseVoltage) void {
-        // stdio.print("{}\n", .{voltages});
-        self.u_axis_pins.setLevel(pwm.rescaleAsInt(u16, math.clamp(voltages.u_axis, -1, 1)));
-        self.v_axis_pins.setLevel(pwm.rescaleAsInt(u16, math.clamp(voltages.v_axis, -1, 1)));
-        self.w_axis_pins.setLevel(pwm.rescaleAsInt(u16, math.clamp(voltages.w_axis, -1, 1)));
+    pub fn setTorque(self: Self, direct_torque: f32, tangent_torque: f32, angle: f32) void {
+        self.driver.setTorque(direct_torque, tangent_torque, angle);
+    }
+
+    pub fn setPosition(self: Self, angle: f32) void {
+        _ = self; // autofix
+        _ = angle; // autofix
+    }
+
+    pub fn setRate(self: Self, rad_per_sec: f32) void {
+        _ = self; // autofix
+        _ = rad_per_sec; // autofix
     }
 };
 
@@ -52,9 +47,7 @@ pub fn run() noreturn {
 
     const motor = Motor.create(4, 6, 7);
     motor.init();
-    motor.setPwmFromVoltages(
-        foc.getPhaseVoltage(1, 0, 0),
-    );
+    motor.setTorque(1, 0, 0);
 
     csdk.sleep_ms(500);
 
@@ -65,8 +58,7 @@ pub fn run() noreturn {
 
     while (true) {
         // stdio.print("angle:{}  speed:{}\n", .{ angle, speed });
-        const phase_voltages = foc.getPhaseVoltage(1, 0, angle);
-        motor.setPwmFromVoltages(phase_voltages);
+        motor.setTorque(1, 0, angle);
 
         angle += speed;
         angle = @mod(angle, math.tau);
