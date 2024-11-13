@@ -6,12 +6,54 @@ const stdio = bldc.stdio;
 const csdk = bldc.csdk;
 const foc = bldc.foc;
 
+pub const Slice = c_uint;
+
+pub const PwmDriver = struct {
+    const Self = @This();
+
+    u_axis_pins: PwmPair,
+    v_axis_pins: PwmPair,
+    w_axis_pins: PwmPair,
+
+    pub fn create(u_axis_slice: Slice, v_axis_slice: Slice, w_axis_slice: Slice) Self {
+        return Self{
+            .u_axis_pins = PwmPair.create(u_axis_slice),
+            .v_axis_pins = PwmPair.create(v_axis_slice),
+            .w_axis_pins = PwmPair.create(w_axis_slice),
+        };
+    }
+
+    pub fn init(self: Self) void {
+        self.u_axis_pins.init();
+        self.v_axis_pins.init();
+        self.w_axis_pins.init();
+
+        enableSlices(&[_]Slice{
+            self.u_axis_pins.slice,
+            self.v_axis_pins.slice,
+            self.w_axis_pins.slice,
+        });
+    }
+
+    fn setPwmFromVoltages(self: Self, voltages: foc.PhaseVoltage) void {
+        // stdio.print("{}\n", .{voltages});
+        self.u_axis_pins.setLevel(rescaleAsInt(u16, math.clamp(voltages.u_axis, -1, 1)));
+        self.v_axis_pins.setLevel(rescaleAsInt(u16, math.clamp(voltages.v_axis, -1, 1)));
+        self.w_axis_pins.setLevel(rescaleAsInt(u16, math.clamp(voltages.w_axis, -1, 1)));
+    }
+
+    pub fn setTorque(self: Self, direct_torque: f32, tangent_torque: f32, angle: f32) void {
+        const voltages = foc.getPhaseVoltage(direct_torque, tangent_torque, angle);
+        self.setPwmFromVoltages(voltages);
+    }
+};
+
 pub const PwmPair = struct {
     const Self = @This();
 
-    slice: c_uint,
+    slice: Slice,
 
-    pub fn create(slice: u8) !Self {
+    pub fn create(slice: Slice) Self {
         const self = Self{
             .slice = slice,
         };
@@ -19,7 +61,7 @@ pub const PwmPair = struct {
         return self;
     }
 
-    pub fn initialize(self: Self) void {
+    pub fn init(self: Self) void {
         var config = csdk.pwm_get_default_config();
 
         csdk.pwm_config_set_output_polarity(&config, true, false);
@@ -40,91 +82,19 @@ pub const PwmPair = struct {
     }
 };
 
-const PwmSlices = struct {
-    const slice_u: u8 = 4;
-    const slice_v: u8 = 6;
-    const slice_w: u8 = 7;
-};
+pub fn enableSlices(slices: []const Slice) void {
+    var mask: u32 = 0;
 
-fn rescale(T: anytype, val: f32) T {
+    for (slices) |slice| {
+        mask = mask | (@as(u32, 1) << @truncate(slice));
+    }
+
+    csdk.pwm_set_mask_enabled(mask);
+}
+
+pub fn rescaleAsInt(T: anytype, val: f32) T {
     //T must be an unsigned integer
     //Expects val to be in the domain [-1 : 1]
     const max_int = math.maxInt(T);
     return @intFromFloat(@as(f32, @floatFromInt(max_int)) * (val + 1.0) / 2.0);
-}
-
-fn setPwmFromVoltages(pwm_u: PwmPair, pwm_v: PwmPair, pwm_w: PwmPair, voltages: foc.PhaseVoltage) void {
-    // stdio.print("{}\n", .{voltages});
-    pwm_u.setLevel(rescale(u16, math.clamp(voltages.u_axis, -1, 1)));
-    pwm_v.setLevel(rescale(u16, math.clamp(voltages.v_axis, -1, 1)));
-    pwm_w.setLevel(rescale(u16, math.clamp(voltages.w_axis, -1, 1)));
-}
-
-pub fn demo() noreturn {
-    const pwm_u = PwmPair.create(PwmSlices.slice_u) catch |err| {
-        stdio.print("Error {}\n", .{err});
-        @panic("dead");
-    };
-    const pwm_v = PwmPair.create(PwmSlices.slice_v) catch |err| {
-        stdio.print("Error {}\n", .{err});
-        @panic("dead");
-    };
-    const pwm_w = PwmPair.create(PwmSlices.slice_w) catch |err| {
-        stdio.print("Error {}\n", .{err});
-        @panic("dead");
-    };
-
-    csdk.gpio_set_function(8, csdk.GPIO_FUNC_PWM);
-    csdk.gpio_set_function(9, csdk.GPIO_FUNC_PWM);
-    csdk.gpio_set_function(12, csdk.GPIO_FUNC_PWM);
-    csdk.gpio_set_function(13, csdk.GPIO_FUNC_PWM);
-    csdk.gpio_set_function(14, csdk.GPIO_FUNC_PWM);
-    csdk.gpio_set_function(15, csdk.GPIO_FUNC_PWM);
-
-    pwm_u.initialize();
-    pwm_v.initialize();
-    pwm_w.initialize();
-
-    // csdk.pwm_set_output_polarity(pwm_v.slice, false, true);
-
-    // pwm_u.setLevel(0xffff / 2);
-    // pwm_v.setLevel(0xffff / 2);
-    // pwm_w.setLevel(0);
-    // csdk.pwm_set_output_polarity(PwmSlices.slice_w, false, false);
-
-    //Enable all pwm signals at once
-    csdk.pwm_set_mask_enabled((1 << PwmSlices.slice_u) | (1 << PwmSlices.slice_v) | (1 << PwmSlices.slice_w));
-
-    setPwmFromVoltages(
-        pwm_u,
-        pwm_v,
-        pwm_w,
-        foc.getPhaseVoltage(1, 0, 0),
-    );
-    csdk.sleep_ms(500);
-
-    const acceleration = 0.00000001;
-    const max_speed = 0.05;
-    var speed: f32 = 0.0;
-    var angle: f32 = 0.0;
-
-    while (true) {
-        setPwmFromVoltages(
-            pwm_u,
-            pwm_v,
-            pwm_w,
-            foc.getPhaseVoltage(1, 0, angle),
-        );
-
-        angle += speed;
-        angle = @mod(angle, math.tau);
-
-        if (speed < max_speed) {
-            speed += acceleration;
-        } else {
-            speed = max_speed;
-        }
-
-        // csdk.sleep_us(50);
-    }
 }
