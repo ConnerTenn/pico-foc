@@ -245,6 +245,15 @@ pub const LIS3MDL = struct {
 pub fn demo() noreturn {
     var sensor = LIS3MDL.create(18, 19, 16, 17);
     sensor.init();
+
+    var ctrl_reg1 = sensor.readReg(LIS3MDL.CtrlReg1);
+    ctrl_reg1.operating_mode_xy = .ultra_high_mode;
+    sensor.writeReg(LIS3MDL.CtrlReg1, ctrl_reg1);
+
+    var ctrl_reg2 = sensor.readReg(LIS3MDL.CtrlReg2);
+    ctrl_reg2.range = .range_12_gauss;
+    sensor.writeReg(LIS3MDL.CtrlReg2, ctrl_reg2);
+
     var ctrl_reg3 = sensor.readReg(LIS3MDL.CtrlReg3);
     ctrl_reg3.mode = .continuous_mode;
     sensor.writeReg(LIS3MDL.CtrlReg3, ctrl_reg3);
