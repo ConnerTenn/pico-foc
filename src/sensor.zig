@@ -20,41 +20,41 @@ pub const LIS3MDL = struct {
 
     // The magnetometer ranges
     const Range = enum(u2) {
-        RANGE_4_GAUSS = 0b00, // +/- 4g (default value)
-        RANGE_8_GAUSS = 0b01, // +/- 8g
-        RANGE_12_GAUSS = 0b10, // +/- 12g
-        RANGE_16_GAUSS = 0b11, // +/- 16g
+        range_4_gauss = 0b00, // +/- 4g (default value)
+        range_8_gauss = 0b01, // +/- 8g
+        range_12_gauss = 0b10, // +/- 12g
+        range_16_gauss = 0b11, // +/- 16g
     };
 
     // The magnetometer data rate, includes FAST_ODR bit */
     const DataRate = enum(u4) {
-        DATARATE_0_625_HZ = 0b0000, // 0.625 Hz
-        DATARATE_1_25_HZ = 0b0010, // 1.25 Hz
-        DATARATE_2_5_HZ = 0b0100, // 2.5 Hz
-        DATARATE_5_HZ = 0b0110, // 5 Hz
-        DATARATE_10_HZ = 0b1000, // 10 Hz
-        DATARATE_20_HZ = 0b1010, // 20 Hz
-        DATARATE_40_HZ = 0b1100, // 40 Hz
-        DATARATE_80_HZ = 0b1110, // 80 Hz
-        DATARATE_155_HZ = 0b0001, // 155 Hz (FAST_ODR + UHP)
-        DATARATE_300_HZ = 0b0011, // 300 Hz (FAST_ODR + HP)
-        DATARATE_560_HZ = 0b0101, // 560 Hz (FAST_ODR + MP)
-        DATARATE_1000_HZ = 0b0111, // 1000 Hz (FAST_ODR + LP)
+        data_rate_0_625_HZ = 0b0000, // 0.625 Hz
+        data_rate_1_25_HZ = 0b0010, // 1.25 Hz
+        data_rate_2_5_HZ = 0b0100, // 2.5 Hz
+        data_rate_5_HZ = 0b0110, // 5 Hz
+        data_rate_10_HZ = 0b1000, // 10 Hz
+        data_rate_20_HZ = 0b1010, // 20 Hz
+        data_rate_40_HZ = 0b1100, // 40 Hz
+        data_rate_80_HZ = 0b1110, // 80 Hz
+        data_rate_155_HZ = 0b0001, // 155 Hz (FAST_ODR + UHP)
+        data_rate_300_HZ = 0b0011, // 300 Hz (FAST_ODR + HP)
+        data_rate_560_HZ = 0b0101, // 560 Hz (FAST_ODR + MP)
+        data_rate_1000_HZ = 0b0111, // 1000 Hz (FAST_ODR + LP)
     };
 
     // The magnetometer performance mode
     const PerformanceMode = enum(u2) {
-        LOWPOWERMODE = 0b00, // Low power mode
-        MEDIUMMODE = 0b01, // Medium performance mode
-        HIGHMODE = 0b10, // High performance mode
-        ULTRAHIGHMODE = 0b11, // Ultra-high performance mode
+        low_power_mode = 0b00, // Low power mode
+        medium_mode = 0b01, // Medium performance mode
+        high_mode = 0b10, // High performance mode
+        ultra_high_mode = 0b11, // Ultra-high performance mode
     };
 
     // The magnetometer operation mode
     const OperationMode = enum(u2) {
-        CONTINUOUSMODE = 0b00, // Continuous conversion
-        SINGLEMODE = 0b01, // Single-shot conversion
-        POWERDOWNMODE = 0b11, // Powered-down mode
+        continuous_mode = 0b00, // Continuous conversion
+        single_mode = 0b01, // Single-shot conversion
+        power_down_mode = 0b11, // Powered-down mode
     };
 
     const Endian = enum(u1) {
@@ -203,7 +203,7 @@ pub const LIS3MDL = struct {
         const write_cmd = 0x00;
         const write_data = [_]u8{
             write_cmd | T.address,
-            data,
+            @as(u8, @bitCast(data)),
         };
         _ = csdk.spi_write_blocking(self.hardware_spi, &write_data, 2);
 
@@ -245,13 +245,18 @@ pub const LIS3MDL = struct {
 pub fn demo() noreturn {
     var sensor = LIS3MDL.create(18, 19, 16, 17);
     sensor.init();
+    var ctrl_reg3 = sensor.readReg(LIS3MDL.CtrlReg3);
+    ctrl_reg3.mode = .continuous_mode;
+    sensor.writeReg(LIS3MDL.CtrlReg3, ctrl_reg3);
+
     stdio.print("CtrlReg1: {}\n", .{sensor.readReg(LIS3MDL.CtrlReg1)});
     stdio.print("CtrlReg2: {}\n", .{sensor.readReg(LIS3MDL.CtrlReg2)});
     stdio.print("CtrlReg3: {}\n", .{sensor.readReg(LIS3MDL.CtrlReg3)});
     stdio.print("CtrlReg4: {}\n", .{sensor.readReg(LIS3MDL.CtrlReg4)});
-    stdio.print("{}\n", .{sensor.getRawData()});
+    stdio.print("{}\n\n", .{sensor.getRawData()});
 
     while (true) {
-        // stdio.print("{}\n", .{sensor.getRawData()});
+        const raw_data = sensor.getRawData();
+        stdio.print("X:{d: <8}  Y:{d: <8}  Z:{d: <8}   \r", .{ raw_data.x_axis, raw_data.y_axis, raw_data.z_axis });
     }
 }
