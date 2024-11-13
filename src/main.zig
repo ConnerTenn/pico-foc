@@ -43,6 +43,7 @@ export fn main() void {
     }
 
     // bldc.pwm.demo();
+    bldc.sensor.demo();
     bldc.motor.run();
     // //Blink loop
     // while (true) {
