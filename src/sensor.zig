@@ -11,6 +11,29 @@ pub const LIS3MDL = struct {
         x_axis: i16,
         y_axis: i16,
         z_axis: i16,
+
+        pub fn format(self: RawData, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+            _ = fmt;
+            _ = options;
+            try writer.print("X:", .{});
+            try bldc.printBarGraph(
+                15,
+                @as(f32, @floatFromInt(self.x_axis)) / @as(f32, @floatFromInt(std.math.maxInt(i16))),
+                writer,
+            );
+            try writer.print("  Y:", .{});
+            try bldc.printBarGraph(
+                15,
+                @as(f32, @floatFromInt(self.y_axis)) / @as(f32, @floatFromInt(std.math.maxInt(i16))),
+                writer,
+            );
+            try writer.print("  Z:", .{});
+            try bldc.printBarGraph(
+                15,
+                @as(f32, @floatFromInt(self.z_axis)) / @as(f32, @floatFromInt(std.math.maxInt(i16))),
+                writer,
+            );
+        }
     };
     const FieldData = struct {
         x_axis: f32,
@@ -262,10 +285,11 @@ pub fn demo() noreturn {
     stdio.print("CtrlReg2: {}\n", .{sensor.readReg(LIS3MDL.CtrlReg2)});
     stdio.print("CtrlReg3: {}\n", .{sensor.readReg(LIS3MDL.CtrlReg3)});
     stdio.print("CtrlReg4: {}\n", .{sensor.readReg(LIS3MDL.CtrlReg4)});
-    stdio.print("{}\n\n", .{sensor.getRawData()});
+    var raw_data = sensor.getRawData();
+    stdio.print("X:{d: <8}  Y:{d: <8}  Z:{d: <8}\n\n", .{ raw_data.x_axis, raw_data.y_axis, raw_data.z_axis });
 
     while (true) {
-        const raw_data = sensor.getRawData();
-        stdio.print("X:{d: <8}  Y:{d: <8}  Z:{d: <8}   \r", .{ raw_data.x_axis, raw_data.y_axis, raw_data.z_axis });
+        raw_data = sensor.getRawData();
+        stdio.print("{}   \r", .{raw_data});
     }
 }
