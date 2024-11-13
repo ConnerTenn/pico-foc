@@ -26,6 +26,6 @@ pico_enable_stdio_usb(${PROJECT_NAME} 1)
 add_library(zig_library STATIC IMPORTED)
 set_property(TARGET zig_library PROPERTY IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/zig-out/lib/libbldc.a)
 
-target_link_libraries(${PROJECT_NAME} zig_library pico_stdlib)
+target_link_libraries(${PROJECT_NAME} zig_library pico_stdlib hardware_spi)
 
 pico_add_extra_outputs(${PROJECT_NAME})
