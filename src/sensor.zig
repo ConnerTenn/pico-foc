@@ -6,17 +6,17 @@ const stdio = bldc.stdio;
 
 pub const LIS3MDL = struct {
     const Self = @This();
-    const I2CADDR_DEFAULT = 0x1C; // Default breakout addres
 
-    const REG_WHO_AM_I = 0x0F; // Register that contains the part ID
-    const REG_CTRL_REG1 = 0x20; // Register address for control 1
-    const REG_CTRL_REG2 = 0x21; // Register address for control 2
-    const REG_CTRL_REG3 = 0x22; // Register address for control 3
-    const REG_CTRL_REG4 = 0x23; // Register address for control 3
-    const REG_STATUS = 0x27; // Register address for status
-    const REG_OUT_X_L = 0x28; // Register address for X axis lower byte
-    const REG_INT_CFG = 0x30; // Interrupt configuration register
-    const REG_INT_THS_L = 0x32; // Low byte of the irq threshold
+    const RawData = struct {
+        x_axis: i16,
+        y_axis: i16,
+        z_axis: i16,
+    };
+    const FieldData = struct {
+        x_axis: f32,
+        y_axis: f32,
+        z_axis: f32,
+    };
 
     // The magnetometer ranges
     const Range = enum(u2) {
@@ -57,6 +57,94 @@ pub const LIS3MDL = struct {
         POWERDOWNMODE = 0b11, // Powered-down mode
     };
 
+    const Endian = enum(u1) {
+        little = 0b0,
+        big = 0b1,
+    };
+
+    const CtrlReg1 = packed struct {
+        const address: u6 = 0x20;
+
+        st: u1,
+        data_rate: DataRate,
+        operating_mode_xy: PerformanceMode,
+        temp_en: u1,
+    };
+
+    const CtrlReg2 = packed struct {
+        const address: u6 = 0x21;
+
+        res0_1: u2 = 0,
+        soft_reset: u1,
+        reboot: u1,
+        res0_2: u1 = 0,
+        range: Range,
+        res0_3: u1 = 0,
+    };
+
+    const CtrlReg3 = packed struct {
+        const address: u6 = 0x22;
+
+        mode: OperationMode,
+        sim: u1,
+        res0_1: u2 = 0,
+        lp: u1,
+        res0_2: u2 = 0,
+    };
+
+    const CtrlReg4 = packed struct {
+        const address: u6 = 0x23;
+
+        res0_1: u1 = 0,
+        ble: Endian,
+        operating_mode_z: PerformanceMode,
+        res0_2: u4 = 0,
+    };
+
+    const StatusReg = packed struct {
+        const address = 0x27;
+
+        xda: u1,
+        yda: u1,
+        zda: u1,
+        zyxda: u1,
+        xor: u1,
+        yor: u1,
+        zor: u1,
+        zyxor: u1,
+    };
+
+    const OutX_L = packed struct {
+        const address = 0x28;
+
+        lower: u8,
+    };
+    const OutX_H = packed struct {
+        const address = 0x29;
+
+        higher: u8,
+    };
+    const OutY_L = packed struct {
+        const address = 0x2A;
+
+        lower: u8,
+    };
+    const OutY_H = packed struct {
+        const address = 0x2B;
+
+        higher: u8,
+    };
+    const OutZ_L = packed struct {
+        const address = 0x2C;
+
+        lower: u8,
+    };
+    const OutZ_H = packed struct {
+        const address = 0x2D;
+
+        higher: u8,
+    };
+
     sck_pin: c_uint,
     tx_pin: c_uint,
     cs_pin: c_uint,
@@ -89,12 +177,12 @@ pub const LIS3MDL = struct {
         csdk.gpio_put(self.cs_pin, bldc.GPIO_HIGH);
     }
 
-    fn readReg(self: Self, reg: u6) u8 {
+    fn readReg(self: Self, T: type) T {
         self.csSelect();
 
         const read_cmd = 0x8;
         const write_data = [_]u8{
-            read_cmd | reg,
+            read_cmd | T.address,
             0,
         };
         var read_data: [2]u8 = .{0} ** 2;
@@ -103,15 +191,15 @@ pub const LIS3MDL = struct {
         self.csDeselect();
         csdk.sleep_us(10);
 
-        return read_data[1];
+        return @bitCast(read_data[1]);
     }
 
-    fn writeReg(self: Self, reg: u6, data: u8) void {
+    fn writeReg(self: Self, T: type, data: T) void {
         self.csSelect();
 
         const write_cmd = 0x0;
         const write_data = [_]u8{
-            write_cmd | reg,
+            write_cmd | T.address,
             data,
         };
         _ = csdk.spi_write_blocking(self.hardware_spi, &write_data, 2);
@@ -120,124 +208,47 @@ pub const LIS3MDL = struct {
         csdk.sleep_us(10);
     }
 
-    fn setPerformanceMode(mode: PerformanceMode) void {
-        _ = mode; // autofix
+    fn dataAvailable(self: Self) void {
+        const status = self.readReg(StatusReg);
+        return status.zyxda;
     }
 
-    fn getPerformanceMode() PerformanceMode {}
+    fn getRawData(self: Self) RawData {
+        const x_l = @as(u16, self.readReg(OutX_L).lower);
+        const x_h = @as(u16, self.readReg(OutX_H).higher);
+        const y_l = @as(u16, self.readReg(OutY_L).lower);
+        const y_h = @as(u16, self.readReg(OutY_H).higher);
+        const z_l = @as(u16, self.readReg(OutZ_L).lower);
+        const z_h = @as(u16, self.readReg(OutZ_H).higher);
 
-    fn setOperationMode(mode: OperationMode) void {
-        _ = mode; // autofix
+        return RawData{
+            .x_axis = @intCast((x_h << 8) | x_l),
+            .y_axis = @intCast((y_h << 8) | y_l),
+            .z_axis = @intCast((z_h << 8) | z_l),
+        };
     }
 
-    fn getOperationMode(self: Self) OperationMode {
-        const ctrl_reg3 = self.readReg(REG_CTRL_REG3);
-        const operation_mode: OperationMode = @enumFromInt(@as(u2, @truncate(ctrl_reg3)));
-        return operation_mode;
+    fn getFieldValues(self: Self) FieldData {
+        const raw_data = self.getRawData();
+
+        return FieldData{
+            .x_axis = raw_data.x_axis * 4.0 * 100.0 / 32768.0,
+            .y_axis = raw_data.y_axis * 4.0 * 100.0 / 32768.0,
+            .z_axis = raw_data.z_axis * 4.0 * 100.0 / 32768.0,
+        };
     }
-
-    fn setDataRate(data_rate: DataRate) void {
-        _ = data_rate; // autofix
-    }
-
-    fn getDataRate() DataRate {}
-
-    fn setRange(range: Range) void {
-        _ = range; // autofix
-    }
-
-    fn getRange() Range {}
-
-    fn setIntThreshold(value: u16) void {
-        _ = value; // autofix
-    }
-
-    fn getIntThreshold() u16 {}
-
-    fn magneticFieldAvailable(self: *Self) void {
-        _ = self; // autofix
-        // Adafruit_BusIO_Register REG_STATUS = Adafruit_BusIO_Register(
-        //     i2c_dev, spi_dev, AD8_HIGH_TOREAD_AD7_HIGH_TOINC, LIS3MDL_REG_STATUS, 1);
-        // return (REG_STATUS.read() & 0x08) ? 1 : 0;
-    }
-
-    // /**************************************************************************/
-    // /*!
-    //     @brief Read magnetic data
-    //     @param x reference to x axis
-    //     @param y reference to y axis
-    //     @param z reference to z axis
-    //     @returns 1 if success, 0 if not
-    // */
-    // int Adafruit_LIS3MDL::readMagneticField(float &x, float &y, float &z) {
-    // int16_t data[3];
-
-    // Adafruit_BusIO_Register XYZDataReg = Adafruit_BusIO_Register(
-    //     i2c_dev, spi_dev, AD8_HIGH_TOREAD_AD7_HIGH_TOINC, LIS3MDL_REG_OUT_X_L, 6);
-
-    // if (!XYZDataReg.read((uint8_t *)data, sizeof(data))) {
-    //     x = y = z = NAN;
-    //     return 0;
-    // }
-
-    // x = data[0] * 4.0 * 100.0 / 32768.0;
-    // y = data[1] * 4.0 * 100.0 / 32768.0;
-    // z = data[2] * 4.0 * 100.0 / 32768.0;
-
-    // return 1;
-    // }
 };
-
-// /** Class for hardware interfacing with an LIS3MDL magnetometer */
-// class Adafruit_LIS3MDL : public Adafruit_Sensor {
-// public:
-//   Adafruit_LIS3MDL(void);
-//   bool begin_I2C(uint8_t i2c_addr = LIS3MDL_I2CADDR_DEFAULT,
-//                  TwoWire *wire = &Wire);
-//   bool begin_SPI(uint8_t cs_pin, SPIClass *theSPI = &SPI,
-//                  uint32_t frequency = 1000000);
-//   bool begin_SPI(int8_t cs_pin, int8_t sck_pin, int8_t miso_pin,
-//                  int8_t mosi_pin, uint32_t frequency = 1000000);
-
-//   void reset(void);
-
-//   void configInterrupt(bool enableX, bool enableY, bool enableZ, bool polarity,
-//                        bool latch, bool enableInt);
-//   void selfTest(bool flag);
-
-//   void read();
-//   bool getEvent(sensors_event_t *event);
-//   void getSensor(sensor_t *sensor);
-
-//   // Arduino compatible API
-//   int readMagneticField(float &x, float &y, float &z);
-//   float magneticFieldSampleRate(void);
-//   int magneticFieldAvailable(void);
-
-//   int16_t x,     ///< The last read X mag in raw units
-//       y,         ///< The last read Y mag in raw units
-//       z;         ///< The last read Z mag in raw units
-//   float x_gauss, ///< The last read X mag in 'gauss'
-//       y_gauss,   ///< The last read Y mag in 'gauss'
-//       z_gauss;   ///< The last read Z mag in 'gauss'
-
-//   //! buffer for the magnetometer range
-//   lis3mdl_range_t rangeBuffered = LIS3MDL_RANGE_4_GAUSS;
-
-// private:
-//   bool _init(void);
-
-//   Adafruit_I2CDevice *i2c_dev = NULL;
-//   Adafruit_SPIDevice *spi_dev = NULL;
-
-//   int32_t _sensorID;
-// };
 
 pub fn demo() noreturn {
     var sensor = LIS3MDL.create(24, 25, 26);
     sensor.init();
+    stdio.print("CtrlReg1: {}\n", .{sensor.readReg(LIS3MDL.CtrlReg1)});
+    stdio.print("CtrlReg2: {}\n", .{sensor.readReg(LIS3MDL.CtrlReg2)});
+    stdio.print("CtrlReg3: {}\n", .{sensor.readReg(LIS3MDL.CtrlReg3)});
+    stdio.print("CtrlReg4: {}\n", .{sensor.readReg(LIS3MDL.CtrlReg4)});
+    stdio.print("{}\n", .{sensor.getRawData()});
 
-    while (true) {
-        stdio.print("Mode:{}\n", .{sensor.getOperationMode()});
-    }
+    // while (true) {
+    //     stdio.print("{}\n", .{sensor.getRawData()});
+    // }
 }
