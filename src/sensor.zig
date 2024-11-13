@@ -63,7 +63,7 @@ pub const LIS3MDL = struct {
     };
 
     const CtrlReg1 = packed struct {
-        const address: u6 = 0x20;
+        const address = 0x20;
 
         st: u1,
         data_rate: DataRate,
@@ -72,7 +72,7 @@ pub const LIS3MDL = struct {
     };
 
     const CtrlReg2 = packed struct {
-        const address: u6 = 0x21;
+        const address = 0x21;
 
         res0_1: u2 = 0,
         soft_reset: u1,
@@ -83,7 +83,7 @@ pub const LIS3MDL = struct {
     };
 
     const CtrlReg3 = packed struct {
-        const address: u6 = 0x22;
+        const address = 0x22;
 
         mode: OperationMode,
         sim: u1,
@@ -93,7 +93,7 @@ pub const LIS3MDL = struct {
     };
 
     const CtrlReg4 = packed struct {
-        const address: u6 = 0x23;
+        const address = 0x23;
 
         res0_1: u1 = 0,
         ble: Endian,
@@ -147,26 +147,29 @@ pub const LIS3MDL = struct {
 
     sck_pin: c_uint,
     tx_pin: c_uint,
+    rx_pin: c_uint,
     cs_pin: c_uint,
     hardware_spi: ?*csdk.spi_inst_t = @ptrCast(csdk.spi0_hw),
 
-    pub fn create(sck_pin: c_uint, tx_pin: c_uint, cs_pin: c_uint) Self {
+    pub fn create(sck_pin: c_uint, tx_pin: c_uint, rx_pin: c_uint, cs_pin: c_uint) Self {
         return Self{
             .sck_pin = sck_pin,
             .tx_pin = tx_pin,
+            .rx_pin = rx_pin,
             .cs_pin = cs_pin,
         };
     }
 
-    pub fn init(self: *Self) void {
-        // csdk.spi_init(&self.hardware_spi, 10 * 1000 * 1000);
-        _ = csdk.spi_init(self.hardware_spi, 10 * 1000 * 1000); //10MHz.
+    pub fn init(self: Self) void {
+        csdk.gpio_init(self.cs_pin);
+        csdk.gpio_put(self.cs_pin, bldc.GPIO_HIGH);
+        csdk.gpio_set_dir(self.cs_pin, bldc.GPIO_OUT);
+
+        const baudrate = csdk.spi_init(self.hardware_spi, 1 * 1000 * 1000); //1MHz.
+        stdio.print("SPI baudrate:{}\n", .{baudrate});
         csdk.gpio_set_function(self.sck_pin, csdk.GPIO_FUNC_SPI);
         csdk.gpio_set_function(self.tx_pin, csdk.GPIO_FUNC_SPI);
-
-        csdk.gpio_init(self.cs_pin);
-        csdk.gpio_set_dir(self.cs_pin, bldc.GPIO_OUT);
-        csdk.gpio_put(self.cs_pin, bldc.GPIO_HIGH);
+        csdk.gpio_set_function(self.rx_pin, csdk.GPIO_FUNC_SPI);
     }
 
     inline fn csSelect(self: Self) void {
@@ -180,7 +183,7 @@ pub const LIS3MDL = struct {
     fn readReg(self: Self, T: type) T {
         self.csSelect();
 
-        const read_cmd = 0x8;
+        const read_cmd = 0x80;
         const write_data = [_]u8{
             read_cmd | T.address,
             0,
@@ -197,7 +200,7 @@ pub const LIS3MDL = struct {
     fn writeReg(self: Self, T: type, data: T) void {
         self.csSelect();
 
-        const write_cmd = 0x0;
+        const write_cmd = 0x00;
         const write_data = [_]u8{
             write_cmd | T.address,
             data,
@@ -222,9 +225,9 @@ pub const LIS3MDL = struct {
         const z_h = @as(u16, self.readReg(OutZ_H).higher);
 
         return RawData{
-            .x_axis = @intCast((x_h << 8) | x_l),
-            .y_axis = @intCast((y_h << 8) | y_l),
-            .z_axis = @intCast((z_h << 8) | z_l),
+            .x_axis = @bitCast((x_h << 8) | x_l),
+            .y_axis = @bitCast((y_h << 8) | y_l),
+            .z_axis = @bitCast((z_h << 8) | z_l),
         };
     }
 
@@ -240,7 +243,7 @@ pub const LIS3MDL = struct {
 };
 
 pub fn demo() noreturn {
-    var sensor = LIS3MDL.create(24, 25, 26);
+    var sensor = LIS3MDL.create(18, 19, 16, 17);
     sensor.init();
     stdio.print("CtrlReg1: {}\n", .{sensor.readReg(LIS3MDL.CtrlReg1)});
     stdio.print("CtrlReg2: {}\n", .{sensor.readReg(LIS3MDL.CtrlReg2)});
@@ -248,7 +251,7 @@ pub fn demo() noreturn {
     stdio.print("CtrlReg4: {}\n", .{sensor.readReg(LIS3MDL.CtrlReg4)});
     stdio.print("{}\n", .{sensor.getRawData()});
 
-    // while (true) {
-    //     stdio.print("{}\n", .{sensor.getRawData()});
-    // }
+    while (true) {
+        // stdio.print("{}\n", .{sensor.getRawData()});
+    }
 }
