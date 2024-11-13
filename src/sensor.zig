@@ -2,6 +2,7 @@ const std = @import("std");
 
 const bldc = @import("bldc.zig");
 const csdk = bldc.csdk;
+const stdio = bldc.stdio;
 
 pub const LIS3MDL = struct {
     const Self = @This();
@@ -43,23 +44,23 @@ pub const LIS3MDL = struct {
 
     // The magnetometer performance mode
     const PerformanceMode = enum(u2) {
-        LIS3MDL_LOWPOWERMODE = 0b00, // Low power mode
-        LIS3MDL_MEDIUMMODE = 0b01, // Medium performance mode
-        LIS3MDL_HIGHMODE = 0b10, // High performance mode
-        LIS3MDL_ULTRAHIGHMODE = 0b11, // Ultra-high performance mode
+        LOWPOWERMODE = 0b00, // Low power mode
+        MEDIUMMODE = 0b01, // Medium performance mode
+        HIGHMODE = 0b10, // High performance mode
+        ULTRAHIGHMODE = 0b11, // Ultra-high performance mode
     };
 
     // The magnetometer operation mode
     const OperationMode = enum(u2) {
-        LIS3MDL_CONTINUOUSMODE = 0b00, // Continuous conversion
-        LIS3MDL_SINGLEMODE = 0b01, // Single-shot conversion
-        LIS3MDL_POWERDOWNMODE = 0b11, // Powered-down mode
+        CONTINUOUSMODE = 0b00, // Continuous conversion
+        SINGLEMODE = 0b01, // Single-shot conversion
+        POWERDOWNMODE = 0b11, // Powered-down mode
     };
 
     sck_pin: c_uint,
     tx_pin: c_uint,
     cs_pin: c_uint,
-    // hardware_spi: csdk.spi_inst_t = std.mem.zeroes(csdk.spi_inst_t),
+    hardware_spi: ?*csdk.spi_inst_t = @ptrCast(csdk.spi0_hw),
 
     pub fn create(sck_pin: c_uint, tx_pin: c_uint, cs_pin: c_uint) Self {
         return Self{
@@ -71,13 +72,52 @@ pub const LIS3MDL = struct {
 
     pub fn init(self: *Self) void {
         // csdk.spi_init(&self.hardware_spi, 10 * 1000 * 1000);
-        _ = csdk.spi_init(null, 10 * 1000 * 1000); //10MHz.
+        _ = csdk.spi_init(self.hardware_spi, 10 * 1000 * 1000); //10MHz.
         csdk.gpio_set_function(self.sck_pin, csdk.GPIO_FUNC_SPI);
         csdk.gpio_set_function(self.tx_pin, csdk.GPIO_FUNC_SPI);
 
         csdk.gpio_init(self.cs_pin);
         csdk.gpio_set_dir(self.cs_pin, bldc.GPIO_OUT);
         csdk.gpio_put(self.cs_pin, bldc.GPIO_HIGH);
+    }
+
+    inline fn csSelect(self: Self) void {
+        csdk.gpio_put(self.cs_pin, bldc.GPIO_LOW);
+    }
+
+    inline fn csDeselect(self: Self) void {
+        csdk.gpio_put(self.cs_pin, bldc.GPIO_HIGH);
+    }
+
+    fn readReg(self: Self, reg: u6) u8 {
+        self.csSelect();
+
+        const read_cmd = 0x8;
+        const write_data = [_]u8{
+            read_cmd | reg,
+            0,
+        };
+        var read_data: [2]u8 = .{0} ** 2;
+        _ = csdk.spi_write_read_blocking(self.hardware_spi, &write_data, &read_data, 2);
+
+        self.csDeselect();
+        csdk.sleep_us(10);
+
+        return read_data[1];
+    }
+
+    fn writeReg(self: Self, reg: u6, data: u8) void {
+        self.csSelect();
+
+        const write_cmd = 0x0;
+        const write_data = [_]u8{
+            write_cmd | reg,
+            data,
+        };
+        _ = csdk.spi_write_blocking(self.hardware_spi, &write_data, 2);
+
+        self.csDeselect();
+        csdk.sleep_us(10);
     }
 
     fn setPerformanceMode(mode: PerformanceMode) void {
@@ -90,7 +130,11 @@ pub const LIS3MDL = struct {
         _ = mode; // autofix
     }
 
-    fn getOperationMode() OperationMode {}
+    fn getOperationMode(self: Self) OperationMode {
+        const ctrl_reg3 = self.readReg(REG_CTRL_REG3);
+        const operation_mode: OperationMode = @enumFromInt(@as(u2, @truncate(ctrl_reg3)));
+        return operation_mode;
+    }
 
     fn setDataRate(data_rate: DataRate) void {
         _ = data_rate; // autofix
@@ -109,6 +153,39 @@ pub const LIS3MDL = struct {
     }
 
     fn getIntThreshold() u16 {}
+
+    fn magneticFieldAvailable(self: *Self) void {
+        _ = self; // autofix
+        // Adafruit_BusIO_Register REG_STATUS = Adafruit_BusIO_Register(
+        //     i2c_dev, spi_dev, AD8_HIGH_TOREAD_AD7_HIGH_TOINC, LIS3MDL_REG_STATUS, 1);
+        // return (REG_STATUS.read() & 0x08) ? 1 : 0;
+    }
+
+    // /**************************************************************************/
+    // /*!
+    //     @brief Read magnetic data
+    //     @param x reference to x axis
+    //     @param y reference to y axis
+    //     @param z reference to z axis
+    //     @returns 1 if success, 0 if not
+    // */
+    // int Adafruit_LIS3MDL::readMagneticField(float &x, float &y, float &z) {
+    // int16_t data[3];
+
+    // Adafruit_BusIO_Register XYZDataReg = Adafruit_BusIO_Register(
+    //     i2c_dev, spi_dev, AD8_HIGH_TOREAD_AD7_HIGH_TOINC, LIS3MDL_REG_OUT_X_L, 6);
+
+    // if (!XYZDataReg.read((uint8_t *)data, sizeof(data))) {
+    //     x = y = z = NAN;
+    //     return 0;
+    // }
+
+    // x = data[0] * 4.0 * 100.0 / 32768.0;
+    // y = data[1] * 4.0 * 100.0 / 32768.0;
+    // z = data[2] * 4.0 * 100.0 / 32768.0;
+
+    // return 1;
+    // }
 };
 
 // /** Class for hardware interfacing with an LIS3MDL magnetometer */
@@ -160,5 +237,7 @@ pub fn demo() noreturn {
     var sensor = LIS3MDL.create(24, 25, 26);
     sensor.init();
 
-    while (true) {}
+    while (true) {
+        stdio.print("Mode:{}\n", .{sensor.getOperationMode()});
+    }
 }
