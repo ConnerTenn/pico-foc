@@ -6,6 +6,7 @@ pub const motor = @import("motor.zig");
 pub const pwm = @import("pwm.zig");
 pub const foc = @import("foc.zig");
 pub const sensor = @import("sensor.zig");
+pub const spi = @import("spi.zig");
 
 pub const GPIO_IN = false;
 pub const GPIO_OUT = true;
