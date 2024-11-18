@@ -22,21 +22,25 @@ pub const Motor = struct {
     driver: pwm.PwmDriver,
     windings_per_rotation: u8,
 
+    sensor: bldc.sensor.LIS3MDL,
+
     target: Parameters(?f32) = .{ .angle = null, .velocity = null, .torque = null, .acceleration = null },
     limits: Parameters(?f32) = .{ .angle = null, .velocity = null, .torque = null, .acceleration = null },
     state: Parameters(f32) = .{ .angle = 0, .velocity = 0, .torque = 0, .acceleration = 0 },
 
     last_time_us: csdk.absolute_time_t = 0,
 
-    pub fn create(u_axis_slice: pwm.Slice, v_axis_slice: pwm.Slice, w_axis_slice: pwm.Slice, windings_per_rotation: u8) Self {
+    pub fn create(u_axis_slice: pwm.Slice, v_axis_slice: pwm.Slice, w_axis_slice: pwm.Slice, windings_per_rotation: u8, sensor: bldc.sensor.LIS3MDL) Self {
         return Self{
             .driver = pwm.PwmDriver.create(u_axis_slice, v_axis_slice, w_axis_slice),
             .windings_per_rotation = windings_per_rotation,
+            .sensor = sensor,
         };
     }
 
     pub fn init(self: Self) void {
         self.driver.init();
+        self.sensor.init();
     }
 
     pub fn setTorque(self: Self, direct_torque: f32, tangent_torque: f32, angle: f32) void {

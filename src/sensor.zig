@@ -188,6 +188,18 @@ pub const LIS3MDL = struct {
 
     pub fn init(self: Self) void {
         self.spi.init();
+
+        var ctrl_reg1 = self.spi.readReg(LIS3MDL.CtrlReg1);
+        ctrl_reg1.operating_mode_xy = .ultra_high_mode;
+        self.spi.writeReg(LIS3MDL.CtrlReg1, ctrl_reg1);
+
+        var ctrl_reg2 = self.spi.readReg(LIS3MDL.CtrlReg2);
+        ctrl_reg2.range = .range_12_gauss;
+        self.spi.writeReg(LIS3MDL.CtrlReg2, ctrl_reg2);
+
+        var ctrl_reg3 = self.spi.readReg(LIS3MDL.CtrlReg3);
+        ctrl_reg3.mode = .continuous_mode;
+        self.spi.writeReg(LIS3MDL.CtrlReg3, ctrl_reg3);
     }
 
     fn dataAvailable(self: Self) void {
@@ -195,7 +207,7 @@ pub const LIS3MDL = struct {
         return status.zyxda;
     }
 
-    fn getRawData(self: Self) RawData {
+    pub fn getRawData(self: Self) RawData {
         const x_l = @as(u16, self.spi.readReg(OutX_L).lower);
         const x_h = @as(u16, self.spi.readReg(OutX_H).higher);
         const y_l = @as(u16, self.spi.readReg(OutY_L).lower);
@@ -210,7 +222,7 @@ pub const LIS3MDL = struct {
         };
     }
 
-    fn getAngle(self: Self) f32 {
+    pub fn getAngle(self: Self) f32 {
         const raw_data = self.getRawData();
 
         const x_axis: f32 = raw_data.xF32();
@@ -248,18 +260,6 @@ pub const LIS3MDL = struct {
 pub fn demo() noreturn {
     var sensor = LIS3MDL.create(18, 19, 16, 17, csdk.spi0_hw);
     sensor.init();
-
-    var ctrl_reg1 = sensor.spi.readReg(LIS3MDL.CtrlReg1);
-    ctrl_reg1.operating_mode_xy = .ultra_high_mode;
-    sensor.spi.writeReg(LIS3MDL.CtrlReg1, ctrl_reg1);
-
-    var ctrl_reg2 = sensor.spi.readReg(LIS3MDL.CtrlReg2);
-    ctrl_reg2.range = .range_12_gauss;
-    sensor.spi.writeReg(LIS3MDL.CtrlReg2, ctrl_reg2);
-
-    var ctrl_reg3 = sensor.spi.readReg(LIS3MDL.CtrlReg3);
-    ctrl_reg3.mode = .continuous_mode;
-    sensor.spi.writeReg(LIS3MDL.CtrlReg3, ctrl_reg3);
 
     stdio.print("CtrlReg1: {}\n", .{sensor.spi.readReg(LIS3MDL.CtrlReg1)});
     stdio.print("CtrlReg2: {}\n", .{sensor.spi.readReg(LIS3MDL.CtrlReg2)});
