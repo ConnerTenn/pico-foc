@@ -1,4 +1,6 @@
 const std = @import("std");
+const math = std.math;
+const tau = math.tau;
 
 const bldc = @import("bldc.zig");
 const csdk = bldc.csdk;
@@ -10,7 +12,7 @@ pub const LIS3MDL = struct {
     const RawData = struct {
         x_axis: i16,
         y_axis: i16,
-        z_axis: i16,
+        // z_axis: i16,
 
         pub fn format(self: RawData, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
             _ = fmt;
@@ -18,28 +20,36 @@ pub const LIS3MDL = struct {
             try writer.print("X:", .{});
             try bldc.printBarGraph(
                 15,
-                @as(f32, @floatFromInt(self.x_axis)) / @as(f32, @floatFromInt(std.math.maxInt(i16))),
+                self.xF32(),
                 writer,
             );
             try writer.print("  Y:", .{});
             try bldc.printBarGraph(
                 15,
-                @as(f32, @floatFromInt(self.y_axis)) / @as(f32, @floatFromInt(std.math.maxInt(i16))),
+                self.yF32(),
                 writer,
             );
-            try writer.print("  Z:", .{});
-            try bldc.printBarGraph(
-                15,
-                @as(f32, @floatFromInt(self.z_axis)) / @as(f32, @floatFromInt(std.math.maxInt(i16))),
-                writer,
-            );
+            // try writer.print("  Z:", .{});
+            // try bldc.printBarGraph(
+            //     15,
+            //     @as(f32, @floatFromInt(self.z_axis)) / @as(f32, @floatFromInt(std.math.maxInt(i16))),
+            //     writer,
+            // );
+        }
+
+        pub inline fn xF32(self: RawData) f32 {
+            return @as(f32, @floatFromInt(self.x_axis)) / @as(f32, @floatFromInt(std.math.maxInt(i16)));
+        }
+
+        pub inline fn yF32(self: RawData) f32 {
+            return @as(f32, @floatFromInt(self.y_axis)) / @as(f32, @floatFromInt(std.math.maxInt(i16)));
         }
     };
-    const FieldData = struct {
-        x_axis: f32,
-        y_axis: f32,
-        z_axis: f32,
-    };
+    // const FieldData = struct {
+    //     x_axis: f32,
+    //     y_axis: f32,
+    //     z_axis: f32,
+    // };
 
     // The magnetometer ranges
     const Range = enum(u2) {
@@ -190,23 +200,57 @@ pub const LIS3MDL = struct {
         const x_h = @as(u16, self.spi.readReg(OutX_H).higher);
         const y_l = @as(u16, self.spi.readReg(OutY_L).lower);
         const y_h = @as(u16, self.spi.readReg(OutY_H).higher);
-        const z_l = @as(u16, self.spi.readReg(OutZ_L).lower);
-        const z_h = @as(u16, self.spi.readReg(OutZ_H).higher);
+        // const z_l = @as(u16, self.spi.readReg(OutZ_L).lower);
+        // const z_h = @as(u16, self.spi.readReg(OutZ_H).higher);
 
         return RawData{
             .x_axis = @bitCast((x_h << 8) | x_l),
             .y_axis = @bitCast((y_h << 8) | y_l),
-            .z_axis = @bitCast((z_h << 8) | z_l),
+            // .z_axis = @bitCast((z_h << 8) | z_l),
         };
     }
 
-    fn getFieldValues(self: Self) FieldData {
+    // fn getFieldValues(self: Self) FieldData {
+    //     const raw_data = self.getRawData();
+
+    //     return FieldData{
+    //         .x_axis = raw_data.x_axis * 4.0 * 100.0 / 32768.0,
+    //         .y_axis = raw_data.y_axis * 4.0 * 100.0 / 32768.0,
+    //         .z_axis = raw_data.z_axis * 4.0 * 100.0 / 32768.0,
+    //     };
+    // }
+
+    fn getAngle(self: Self) f32 {
         const raw_data = self.getRawData();
 
-        return FieldData{
-            .x_axis = raw_data.x_axis * 4.0 * 100.0 / 32768.0,
-            .y_axis = raw_data.y_axis * 4.0 * 100.0 / 32768.0,
-            .z_axis = raw_data.z_axis * 4.0 * 100.0 / 32768.0,
+        const x_axis: f32 = raw_data.xF32();
+        const y_axis: f32 = raw_data.yF32();
+
+        return switch (math.sign(raw_data.x_axis)) {
+            //Vertical
+            0 => switch (math.sign(raw_data.y_axis)) {
+                0 => 0,
+                1 => tau / 2.0,
+                -1 => 3.0 * tau / 2.0,
+                else => unreachable,
+            },
+
+            //Right half
+            1 => switch (math.sign(raw_data.y_axis)) {
+                0 => 0,
+                1 => math.atan(y_axis / x_axis),
+                -1 => math.atan(y_axis / x_axis) + tau,
+                else => unreachable,
+            },
+
+            //Left half
+            -1 => switch (math.sign(raw_data.y_axis)) {
+                0 => 0,
+                1, -1 => math.atan(y_axis / x_axis) + tau / 2.0,
+                else => unreachable,
+            },
+
+            else => unreachable,
         };
     }
 };
@@ -232,10 +276,10 @@ pub fn demo() noreturn {
     stdio.print("CtrlReg3: {}\n", .{sensor.spi.readReg(LIS3MDL.CtrlReg3)});
     stdio.print("CtrlReg4: {}\n", .{sensor.spi.readReg(LIS3MDL.CtrlReg4)});
     var raw_data = sensor.getRawData();
-    stdio.print("X:{d: <8}  Y:{d: <8}  Z:{d: <8}\n\n", .{ raw_data.x_axis, raw_data.y_axis, raw_data.z_axis });
+    // stdio.print("X:{d: <8}  Y:{d: <8}  Z:{d: <8}\n\n", .{ raw_data.x_axis, raw_data.y_axis, raw_data.z_axis });
 
     while (true) {
         raw_data = sensor.getRawData();
-        stdio.print("{}   \r", .{raw_data});
+        stdio.print("{}   {d: <.4}\r", .{ raw_data, sensor.getAngle() / tau });
     }
 }
