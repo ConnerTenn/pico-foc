@@ -9,6 +9,7 @@ MNT_DIR = /mnt
 help:
 	@echo "Commands:"
 	@echo "  env"
+	@echo "  lsblk"
 	@echo "  build"
 	@echo "  program"
 	@echo "  serial"
@@ -18,6 +19,9 @@ help:
 
 env:
 	nix develop -c $$SHELL
+
+lsblk:
+	watch -n 0 lsblk -T -o NAME,SIZE,MOUNTPOINTS,LABEL
 
 .PHONY:build
 build: $(BIN)
