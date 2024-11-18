@@ -210,16 +210,6 @@ pub const LIS3MDL = struct {
         };
     }
 
-    // fn getFieldValues(self: Self) FieldData {
-    //     const raw_data = self.getRawData();
-
-    //     return FieldData{
-    //         .x_axis = raw_data.x_axis * 4.0 * 100.0 / 32768.0,
-    //         .y_axis = raw_data.y_axis * 4.0 * 100.0 / 32768.0,
-    //         .z_axis = raw_data.z_axis * 4.0 * 100.0 / 32768.0,
-    //     };
-    // }
-
     fn getAngle(self: Self) f32 {
         const raw_data = self.getRawData();
 
@@ -229,15 +219,15 @@ pub const LIS3MDL = struct {
         return switch (math.sign(raw_data.x_axis)) {
             //Vertical
             0 => switch (math.sign(raw_data.y_axis)) {
-                0 => 0,
-                1 => tau / 2.0,
-                -1 => 3.0 * tau / 2.0,
+                0 => 0, //Somehow all zeros. Treat as angle zero
+                1 => tau / 2.0, //Directly up
+                -1 => tau * 3.0 / 2.0, //Directly down
                 else => unreachable,
             },
 
             //Right half
             1 => switch (math.sign(raw_data.y_axis)) {
-                0 => 0,
+                0 => 0, //Directly right
                 1 => math.atan(y_axis / x_axis),
                 -1 => math.atan(y_axis / x_axis) + tau,
                 else => unreachable,
@@ -245,7 +235,7 @@ pub const LIS3MDL = struct {
 
             //Left half
             -1 => switch (math.sign(raw_data.y_axis)) {
-                0 => 0,
+                0 => tau / 2.0, //Directly left
                 1, -1 => math.atan(y_axis / x_axis) + tau / 2.0,
                 else => unreachable,
             },
