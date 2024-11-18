@@ -31,3 +31,21 @@ pub fn printBarGraph(size: comptime_int, value: f32, writer: anytype) !void {
     }
     try writer.print("]", .{});
 }
+
+pub fn printPositionGraph(size: comptime_int, value: f32, lower: f32, upper: f32, writer: anytype) !void {
+    try writer.print("[", .{});
+    for (0..size) |i| {
+        const compare_val = @as(f32, @floatFromInt(i)) / @as(f32, @floatFromInt(size));
+        const step_size: f32 = 1.0 / @as(f32, @floatFromInt(size));
+
+        //Convert to domain [0,1]
+        const normalized_value = (value - lower) / (upper - lower);
+
+        if (@abs(normalized_value - compare_val) < step_size) {
+            try writer.print("|", .{});
+        } else {
+            try writer.print(" ", .{});
+        }
+    }
+    try writer.print("]", .{});
+}

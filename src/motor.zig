@@ -1,5 +1,6 @@
 const std = @import("std");
 const math = std.math;
+const tau = math.tau;
 
 const bldc = @import("bldc.zig");
 const csdk = bldc.csdk;
@@ -28,6 +29,9 @@ pub const Motor = struct {
     limits: Parameters(?f32) = .{ .angle = null, .velocity = null, .torque = null, .acceleration = null },
     state: Parameters(f32) = .{ .angle = 0, .velocity = 0, .torque = 0, .acceleration = 0 },
 
+    sensor_angle: f32 = 0,
+    sensor_angle_bias: f32,
+
     last_time_us: csdk.absolute_time_t = 0,
 
     pub fn create(u_axis_slice: pwm.Slice, v_axis_slice: pwm.Slice, w_axis_slice: pwm.Slice, windings_per_rotation: u8, sensor: bldc.sensor.LIS3MDL) Self {
@@ -35,12 +39,19 @@ pub const Motor = struct {
             .driver = pwm.PwmDriver.create(u_axis_slice, v_axis_slice, w_axis_slice),
             .windings_per_rotation = windings_per_rotation,
             .sensor = sensor,
+            .sensor_angle_bias = 0,
         };
     }
 
-    pub fn init(self: Self) void {
+    pub fn init(self: *Self) void {
         self.driver.init();
         self.sensor.init();
+
+        self.setTorque(1.0, 0.0, 0);
+        csdk.sleep_ms(10);
+
+        self.sensor_angle_bias = self.sensor.getAngle();
+        stdio.print("sensor angle bias: {d:.3}\n", .{self.sensor_angle_bias / math.tau});
     }
 
     pub fn setTorque(self: Self, direct_torque: f32, tangent_torque: f32, angle: f32) void {
@@ -61,7 +72,9 @@ pub const Motor = struct {
         const current_time_us = csdk.get_absolute_time();
         const delta_time_us = current_time_us - self.last_time_us;
         const delta_time_s: f32 = @as(f32, @floatFromInt(delta_time_us)) / (1000.0 * 1000.0);
-        stdio.print("time: {d:.1}s {d:.1}\n", .{ @as(f32, @floatFromInt(current_time_us)) / (1000.0 * 1000.0), self.state.angle / math.tau });
+
+        self.sensor_angle = math.mod(f32, self.sensor.getAngle() - self.sensor_angle_bias, tau) catch 0.0;
+        stdio.print("{}   \r", .{self});
 
         if (self.target.velocity) |velocity| {
             self.state.angle = self.state.angle + velocity * delta_time_s;
@@ -76,6 +89,20 @@ pub const Motor = struct {
         self.setTorque(self.state.torque, 0, self.state.angle);
 
         self.last_time_us = current_time_us;
+    }
+
+    pub fn format(self: Self, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = fmt;
+        _ = options;
+
+        try writer.print("Position: {d:.3} ", .{self.sensor_angle / tau});
+        try bldc.printPositionGraph(
+            30,
+            self.sensor_angle,
+            0,
+            tau,
+            writer,
+        );
     }
 };
 
