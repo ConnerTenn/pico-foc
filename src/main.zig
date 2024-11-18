@@ -1,3 +1,7 @@
+const std = @import("std");
+const math = std.math;
+const tau = math.tau;
+
 const bldc = @import("bldc.zig");
 const csdk = bldc.csdk;
 const stdio = bldc.stdio;
@@ -43,8 +47,10 @@ export fn main() void {
     }
 
     // bldc.pwm.demo();
-    bldc.sensor.demo();
-    bldc.motor.run();
+    // bldc.sensor.demo();
+    // bldc.motor.run();
+    angleTargetDemo();
+
     // //Blink loop
     // while (true) {
     //     stdio.print("Pico!", .{});
@@ -56,6 +62,35 @@ export fn main() void {
     // }
 
     unreachable;
+}
+
+fn angleTargetDemo() void {
+    csdk.gpio_set_function(8, csdk.GPIO_FUNC_PWM);
+    csdk.gpio_set_function(9, csdk.GPIO_FUNC_PWM);
+    csdk.gpio_set_function(12, csdk.GPIO_FUNC_PWM);
+    csdk.gpio_set_function(13, csdk.GPIO_FUNC_PWM);
+    csdk.gpio_set_function(14, csdk.GPIO_FUNC_PWM);
+    csdk.gpio_set_function(15, csdk.GPIO_FUNC_PWM);
+
+    const sensor = bldc.sensor.LIS3MDL.create(18, 19, 16, 17, csdk.spi0_hw);
+    var motor = bldc.motor.Motor.create(
+        4,
+        6,
+        7,
+        8,
+        sensor,
+    );
+    motor.init();
+
+    // motor.setTorque(1, 0, 0);
+
+    csdk.sleep_ms(500);
+
+    motor.target.velocity = math.tau * 1;
+    motor.target.torque = 1;
+    while (true) {
+        motor.update();
+    }
 }
 
 test "trivial" {

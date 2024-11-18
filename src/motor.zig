@@ -48,7 +48,7 @@ pub const Motor = struct {
         self.sensor.init();
 
         self.setTorque(1.0, 0.0, 0);
-        csdk.sleep_ms(10);
+        csdk.sleep_ms(500);
 
         self.sensor_angle_bias = self.sensor.getAngle();
         stdio.print("sensor angle bias: {d:.3}\n", .{self.sensor_angle_bias / math.tau});
@@ -76,17 +76,41 @@ pub const Motor = struct {
         self.sensor_angle = math.mod(f32, self.sensor.getAngle() - self.sensor_angle_bias, tau) catch 0.0;
         stdio.print("{}   \r", .{self});
 
-        if (self.target.velocity) |velocity| {
-            self.state.angle = self.state.angle + velocity * delta_time_s;
-        }
+        // if (self.target.velocity) |velocity| {
+        //     self.state.angle = self.state.angle + velocity * delta_time_s;
+        // }
 
-        if (self.target.torque) |torque| {
-            self.state.torque = torque;
-        } else {
-            self.state.torque = 1;
-        }
+        // if (self.target.torque) |torque| {
+        //     self.state.torque = torque;
+        // } else {
+        //     self.state.torque = 1;
+        // }
 
-        self.setTorque(self.state.torque, 0, self.state.angle);
+        // self.setTorque(self.state.torque, 0, self.state.angle);
+        const target_angle = 0.5 * tau;
+
+        const delta_error = target_angle - self.sensor_angle;
+        // const abs_error = @abs(delta_error);
+
+        // if (delta_error > 0) {
+        //     //Need to increase sensor angle
+        //     self.state.angle += 0.5 * tau * delta_time_s;
+        // } else if (delta_error < 0) {
+        //     //Need to decrase sensor angle
+        //     self.state.angle -= 0.5 * tau * delta_time_s;
+        // }
+        self.state.angle += delta_error * tau * delta_time_s;
+
+        self.setTorque(0.2, 0, self.state.angle);
+
+        // if (self.target.angle) |target_angle| {
+        //     var torque: f32 = 0.0;
+
+        //     if (target_angle > self.state.angle) {
+        //         torque = 1.0;
+        //     }
+        // }
+        // self.setTorque(0.1, 0.0, self.state.angle + 0.1 * tau);
 
         self.last_time_us = current_time_us;
     }
@@ -103,26 +127,6 @@ pub const Motor = struct {
             tau,
             writer,
         );
+        try writer.print("  state: {d:.3} ", .{self.state.angle / tau});
     }
 };
-
-pub fn run() noreturn {
-    csdk.gpio_set_function(8, csdk.GPIO_FUNC_PWM);
-    csdk.gpio_set_function(9, csdk.GPIO_FUNC_PWM);
-    csdk.gpio_set_function(12, csdk.GPIO_FUNC_PWM);
-    csdk.gpio_set_function(13, csdk.GPIO_FUNC_PWM);
-    csdk.gpio_set_function(14, csdk.GPIO_FUNC_PWM);
-    csdk.gpio_set_function(15, csdk.GPIO_FUNC_PWM);
-
-    var motor = Motor.create(4, 6, 7, 8);
-    motor.init();
-    motor.setTorque(1, 0, 0);
-
-    csdk.sleep_ms(500);
-
-    motor.target.velocity = math.tau * 1;
-    motor.target.torque = 1;
-    while (true) {
-        motor.update();
-    }
-}
