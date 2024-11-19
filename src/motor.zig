@@ -90,15 +90,29 @@ pub const Motor = struct {
 
         switch (demo) {
             .angle_monitor => {
-                stdio.print("target:{d:.3} measured:{d:.3}  delta:{d:.3}\r", .{
+                const DeltaErrorStats = struct {
+                    var min_error: f32 = math.floatMax(f32);
+                    var max_error: f32 = 0;
+                };
+
+                const delta_error = deltaError(f32, self.sensor_angle, self.state.angle, tau);
+
+                DeltaErrorStats.min_error = @min(DeltaErrorStats.min_error, delta_error);
+                DeltaErrorStats.max_error = @max(DeltaErrorStats.max_error, delta_error);
+
+                stdio.print("target:{d:.3} measured:{d:.3}  delta:{d: >6.3}[{d: >6.3}->{d: >6.3}]  \r", .{
                     self.state.angle / tau,
                     self.sensor_angle / tau,
-                    deltaError(f32, self.sensor_angle, self.state.angle, tau),
+                    delta_error / tau,
+                    DeltaErrorStats.min_error / tau,
+                    DeltaErrorStats.max_error / tau,
                 });
 
                 self.setTorque(1.0, 0.0, self.state.angle);
 
-                self.state.angle = bldc.mod(f32, self.state.angle + 0.1 * tau * delta_time_s, tau, .regular);
+                // if (current_time_us < 5 * 1000 * 1000) {
+                self.state.angle = bldc.mod(f32, self.state.angle + 0.8 * tau * delta_time_s, tau, .regular);
+                // }
             },
 
             .tracking_pos => {
