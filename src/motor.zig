@@ -85,7 +85,7 @@ pub const Motor = struct {
             bldc.symetricMod(f32, self.state.angle - self.sensor_angle, tau),
         });
 
-        self.setTorque(0.2, 0.0, self.state.angle);
+        self.setTorque(1.0, 0.0, self.state.angle);
 
         self.state.angle = bldc.mod(f32, self.state.angle + 0.1 * tau * delta_time_s, tau);
 
