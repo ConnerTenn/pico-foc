@@ -44,6 +44,7 @@ pub const PwmDriver = struct {
 
     pub fn setTorque(self: Self, direct_torque: f32, tangent_torque: f32, angle: f32) void {
         const voltages = foc.getPhaseVoltage(direct_torque, tangent_torque, angle);
+        // stdio.print("{}\n", .{voltages});
         self.setPwmFromVoltages(voltages);
     }
 };

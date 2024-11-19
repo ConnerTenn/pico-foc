@@ -65,26 +65,24 @@ export fn main() void {
 }
 
 fn angleTargetDemo() void {
-    csdk.gpio_set_function(8, csdk.GPIO_FUNC_PWM);
-    csdk.gpio_set_function(9, csdk.GPIO_FUNC_PWM);
-    csdk.gpio_set_function(12, csdk.GPIO_FUNC_PWM);
-    csdk.gpio_set_function(13, csdk.GPIO_FUNC_PWM);
-    csdk.gpio_set_function(14, csdk.GPIO_FUNC_PWM);
-    csdk.gpio_set_function(15, csdk.GPIO_FUNC_PWM);
+    csdk.gpio_set_function(8, csdk.GPIO_FUNC_PWM); //UL
+    csdk.gpio_set_function(9, csdk.GPIO_FUNC_PWM); //UH
+    csdk.gpio_set_function(12, csdk.GPIO_FUNC_PWM); //VL
+    csdk.gpio_set_function(13, csdk.GPIO_FUNC_PWM); //VH
+    csdk.gpio_set_function(14, csdk.GPIO_FUNC_PWM); //WL
+    csdk.gpio_set_function(15, csdk.GPIO_FUNC_PWM); //WH
 
     const sensor = bldc.sensor.LIS3MDL.create(18, 19, 16, 17, csdk.spi0_hw);
     var motor = bldc.motor.Motor.create(
         4,
         6,
         7,
-        8,
+        7,
         sensor,
     );
     motor.init();
 
     // motor.setTorque(1, 0, 0);
-
-    csdk.sleep_ms(500);
 
     motor.target.velocity = math.tau * 1;
     motor.target.torque = 1;

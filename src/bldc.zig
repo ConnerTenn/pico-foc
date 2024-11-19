@@ -1,3 +1,6 @@
+const std = @import("std");
+const math = std.math;
+
 const sdk = @import("sdk-wrapper.zig");
 pub const csdk = sdk.csdk;
 
@@ -15,6 +18,21 @@ pub const GPIO_HIGH = true;
 pub const GPIO_LOW = false;
 
 pub const LED_PIN = csdk.PICO_DEFAULT_LED_PIN;
+
+pub inline fn mod(T: type, numerator: T, denominator: T) T {
+    return math.mod(T, numerator, denominator) catch 0;
+}
+
+pub inline fn symetricMod(T: type, numerator: T, denominator: T) T {
+    const modulo = mod(T, numerator, denominator);
+
+    //Check the sign of the original result
+    if (numerator * denominator >= 0) {
+        return modulo;
+    } else {
+        return denominator - modulo;
+    }
+}
 
 pub fn printBarGraph(size: comptime_int, value: f32, writer: anytype) !void {
     try writer.print("[", .{});
