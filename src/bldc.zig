@@ -19,18 +19,37 @@ pub const GPIO_LOW = false;
 
 pub const LED_PIN = csdk.PICO_DEFAULT_LED_PIN;
 
-pub inline fn mod(T: type, numerator: T, denominator: T) T {
-    return math.mod(T, numerator, denominator) catch 0;
-}
+pub const ModType = enum {
+    regular,
+    mirror_y_axis,
+    mirror_xy_axis,
+};
 
-pub inline fn symetricMod(T: type, numerator: T, denominator: T) T {
-    const modulo = mod(T, numerator, denominator);
+pub inline fn mod(T: type, numerator: T, denominator: T, comptime mod_type: ModType) T {
+    switch (mod_type) {
+        .regular => {
+            return math.mod(T, numerator, denominator) catch 0;
+        },
+        .mirror_y_axis => {
+            const modulo = mod(T, numerator, denominator, .regular);
 
-    //Check the sign of the original result
-    if (numerator * denominator >= 0) {
-        return modulo;
-    } else {
-        return denominator - modulo;
+            //Check the sign of the original result
+            if (numerator * denominator >= 0) {
+                return modulo;
+            } else {
+                return denominator - modulo;
+            }
+        },
+        .mirror_xy_axis => {
+            const modulo = mod(T, numerator, denominator, .regular);
+
+            //Check the sign of the original result
+            if (numerator * denominator >= 0) {
+                return modulo;
+            } else {
+                return modulo - denominator;
+            }
+        },
     }
 }
 

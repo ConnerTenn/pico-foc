@@ -8,6 +8,10 @@ const stdio = bldc.stdio;
 const pwm = bldc.pwm;
 const foc = bldc.foc;
 
+pub fn deltaError(T: type, measured: T, target: T, modulo: T) T {
+    return bldc.mod(T, target - measured + modulo / 2.0, modulo, .regular) - modulo / 2.0;
+}
+
 pub const Motor = struct {
     const Self = @This();
 
@@ -73,57 +77,46 @@ pub const Motor = struct {
         _ = rad_per_sec; // autofix
     }
 
-    pub fn update(self: *Self) void {
+    pub inline fn update(self: *Self) void {
         const current_time_us = csdk.get_absolute_time();
         const delta_time_us = current_time_us - self.last_time_us;
         const delta_time_s: f32 = @as(f32, @floatFromInt(delta_time_us)) / (1000.0 * 1000.0);
 
-        self.sensor_angle = bldc.mod(f32, self.sensor.getAngle() - self.sensor_angle_bias, tau);
-        stdio.print("target:{d:.2} measured:{d:.2}  delta:{d:.2}\r", .{
-            self.state.angle,
-            self.sensor_angle,
-            bldc.symetricMod(f32, self.state.angle - self.sensor_angle, tau),
-        });
+        const new_sensor_angle = bldc.mod(f32, self.sensor.getAngle() - self.sensor_angle_bias, tau, .regular);
+        //Smoothing?
+        self.sensor_angle = self.sensor_angle * 0.0 + new_sensor_angle * 1.0;
 
-        self.setTorque(1.0, 0.0, self.state.angle);
+        const demo: enum { angle_monitor, tracking_pos } = .angle_monitor;
 
-        self.state.angle = bldc.mod(f32, self.state.angle + 0.1 * tau * delta_time_s, tau);
+        switch (demo) {
+            .angle_monitor => {
+                stdio.print("target:{d:.3} measured:{d:.3}  delta:{d:.3}\r", .{
+                    self.state.angle / tau,
+                    self.sensor_angle / tau,
+                    deltaError(f32, self.sensor_angle, self.state.angle, tau),
+                });
 
-        // csdk.sleep_ms(100);
+                self.setTorque(1.0, 0.0, self.state.angle);
 
-        // self.sensor_angle = math.mod(f32, self.sensor.getAngle() - self.sensor_angle_bias, tau) catch 0.0;
-        // // stdio.print("{}   \r", .{self});
+                self.state.angle = bldc.mod(f32, self.state.angle + 0.1 * tau * delta_time_s, tau, .regular);
+            },
 
-        // // if (self.target.velocity) |velocity| {
-        // //     self.state.angle = self.state.angle + velocity * delta_time_s;
-        // // }
+            .tracking_pos => {
+                const target_angle = 0.0 * tau;
 
-        // // if (self.target.torque) |torque| {
-        // //     self.state.torque = torque;
-        // // } else {
-        // //     self.state.torque = 1;
-        // // }
+                const delta_error = deltaError(f32, self.sensor_angle, target_angle, tau);
 
-        // // self.setTorque(self.state.torque, 0, self.state.angle);
-        // const target_angle = 0.5 * tau;
+                self.state.angle = self.sensor_angle + 0.2 * delta_error;
+                stdio.print("state:{d:.3} sensor:{d:.3} target:{d:.3} dE:{d:.3} \r", .{
+                    self.state.angle / tau,
+                    self.sensor_angle / tau,
+                    target_angle / tau,
+                    delta_error / tau,
+                });
 
-        // const delta_error = target_angle - self.sensor_angle;
-        // _ = delta_error; // autofix
-        // // self.state.angle += delta_error * tau * delta_time_s;
-
-        // self.state.angle = self.sensor_angle;
-        // stdio.print("{d:.3} {d:.3}\n", .{ self.state.angle, self.state.angle * @as(f32, @floatFromInt(self.windings_per_rotation)) });
-
-        // self.setTorque(0.2, 0.0, self.state.angle);
-
-        // // if (self.target.angle) |target_angle| {
-        // //     var torque: f32 = 0.0;
-
-        // //     if (target_angle > self.state.angle) {
-        // //         torque = 1.0;
-        // //     }
-        // // }
-        // // self.setTorque(0.1, 0.0, self.state.angle + 0.1 * tau);
+                self.setTorque(1.0, 0.0, self.state.angle);
+            },
+        }
 
         self.last_time_us = current_time_us;
     }
