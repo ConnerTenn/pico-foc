@@ -133,7 +133,7 @@ pub const Motor = struct {
         //Smoothing?
         self.sensor_angle = self.sensor_angle * 0.0 + new_sensor_angle * 1.0;
 
-        const demo: enum { angle_monitor, offset_measurement, tracking_pos } = .offset_measurement;
+        const demo: enum { angle_monitor, tracking_pos, offset_measurement, tangent } = .tangent;
 
         switch (demo) {
             .angle_monitor => {
@@ -205,6 +205,25 @@ pub const Motor = struct {
 
                 // if (current_time_us < 5 * 1000 * 1000) {
                 self.state.angle = bldc.mod(f32, self.state.angle + 0.1 * tau * delta_time_s, tau, .regular);
+            },
+
+            .tangent => {
+                self.state.angle = self.sensor_angle;
+
+                const target_angle = 0.0 * tau;
+
+                const delta_error = deltaError(f32, self.sensor_angle, target_angle, tau);
+
+                // const torque = delta_error / tau;
+
+                // var torque: f32 = 0;
+                // if (@abs(delta_error) > 0.001 * tau) {
+                //     torque = math.sign(delta_error) * 0.5;
+                // }
+
+                const torque = (1.0 - math.pow(f32, 1000.0, -@abs(delta_error))) * math.sign(delta_error);
+
+                self.setTorque(0.0, torque, self.state.angle);
             },
         }
 
