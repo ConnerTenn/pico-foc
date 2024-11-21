@@ -31,7 +31,7 @@ pub const Motor = struct {
 
     sensor: bldc.sensor.LIS3MDL,
 
-    calibration_data: [num_calibration_samples]f32 = undefined,
+    calibration_data: [num_calibration_samples]f32 = .{0} ** num_calibration_samples,
 
     target: Parameters(?f32) = .{ .angle = null, .velocity = null, .torque = null, .acceleration = null },
     limits: Parameters(?f32) = .{ .angle = null, .velocity = null, .torque = null, .acceleration = null },
