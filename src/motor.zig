@@ -73,7 +73,7 @@ pub const Motor = struct {
             const target_angle = tau * @as(f32, @floatFromInt(sample_idx)) / @as(f32, @floatFromInt(num_calibration_samples));
 
             self.setTorque(1.0, 0.0, target_angle);
-            csdk.sleep_ms(200);
+            csdk.sleep_ms(100);
 
             //Collect a number of samples and average them
             const num_samples = 10;
@@ -133,7 +133,7 @@ pub const Motor = struct {
         //Smoothing?
         self.sensor_angle = self.sensor_angle * 0.0 + new_sensor_angle * 1.0;
 
-        const demo: enum { angle_monitor, tracking_pos, offset_measurement, tangent } = .tangent;
+        const demo: enum { angle_monitor, tracking_pos, offset_measurement, tangent, bistable } = .bistable;
 
         switch (demo) {
             .angle_monitor => {
@@ -222,6 +222,28 @@ pub const Motor = struct {
                 // }
 
                 const torque = (1.0 - math.pow(f32, 1000.0, -@abs(delta_error))) * math.sign(delta_error);
+
+                self.setTorque(0.0, torque, self.state.angle);
+            },
+
+            .bistable => {
+                self.state.angle = self.sensor_angle;
+
+                const target_angle_1 = 0.0 * tau;
+                const target_angle_2 = 0.1 * tau;
+
+                const delta_error_1 = deltaError(f32, self.sensor_angle, target_angle_1, tau);
+                const delta_error_2 = deltaError(f32, self.sensor_angle, target_angle_2, tau);
+                // stdio.print("{d: >5.2} {d: >5.2}\r", .{ delta_error_1, delta_error_2 });
+
+                var delta_error: f32 = undefined;
+                if (@abs(delta_error_1) <= @abs(delta_error_2)) {
+                    delta_error = delta_error_1;
+                } else {
+                    delta_error = delta_error_2;
+                }
+
+                const torque = (1.0 - math.pow(f32, 200.0, -@abs(delta_error))) * math.sign(delta_error);
 
                 self.setTorque(0.0, torque, self.state.angle);
             },
