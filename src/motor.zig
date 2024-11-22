@@ -38,14 +38,16 @@ pub const Motor = struct {
     state: Parameters(f32) = .{ .angle = 0, .velocity = 0, .torque = 0, .acceleration = 0 },
 
     sensor_angle: f32 = 0,
+    pid: PIDcontrol,
 
     last_time_us: csdk.absolute_time_t = 0,
 
-    pub fn create(u_axis_slice: pwm.Slice, v_axis_slice: pwm.Slice, w_axis_slice: pwm.Slice, windings_per_rotation: u8, sensor: bldc.sensor.LIS3MDL) Self {
+    pub fn create(u_axis_slice: pwm.Slice, v_axis_slice: pwm.Slice, w_axis_slice: pwm.Slice, windings_per_rotation: u8, sensor: bldc.sensor.LIS3MDL, pid: PIDcontrol) Self {
         return Self{
             .driver = pwm.PwmDriver.create(u_axis_slice, v_axis_slice, w_axis_slice),
             .windings_per_rotation = windings_per_rotation,
             .sensor = sensor,
+            .pid = pid,
         };
     }
 
@@ -128,7 +130,6 @@ pub const Motor = struct {
         const current_time_us = csdk.get_absolute_time();
         const delta_time_us = current_time_us - self.last_time_us;
         const delta_time_s: f32 = @as(f32, @floatFromInt(delta_time_us)) / (1000.0 * 1000.0);
-        _ = delta_time_s; // autofix
 
         self.sensor_angle = self.getAngle();
         self.state.angle = self.sensor_angle;
@@ -136,7 +137,15 @@ pub const Motor = struct {
         const target_angle = 0.0 * tau;
         const delta_error = deltaError(f32, self.sensor_angle, target_angle, tau);
 
-        const torque = (1.0 - math.pow(f32, 1000.0, -@abs(delta_error))) * math.sign(delta_error);
+        // const torque = (1.0 - math.pow(f32, 1000.0, -@abs(delta_error))) * math.sign(delta_error);
+
+        var torque = self.pid.update(delta_error, delta_time_s);
+        if (torque > 1.0) {
+            torque = 1.0;
+        } else if (torque < -1.0) {
+            torque = -1.0;
+        }
+
         self.setTorque(0.0, torque, self.state.angle);
 
         self.last_time_us = current_time_us;
@@ -155,5 +164,39 @@ pub const Motor = struct {
             writer,
         );
         try writer.print("  state: {d:.3} ", .{self.state.angle / tau});
+    }
+};
+
+pub const PIDcontrol = struct {
+    const Self = @This();
+
+    proportional_gain: f32,
+    integral_gain: f32,
+    derivative_gain: f32,
+
+    last_error: f32 = 0,
+    error_accumulator: f32 = 0,
+
+    pub fn create(proportional_gain: f32, integral_gain: f32, derivative_gain: f32) Self {
+        return Self{
+            .proportional_gain = proportional_gain,
+            .integral_gain = integral_gain,
+            .derivative_gain = derivative_gain,
+        };
+    }
+
+    pub fn update(self: *Self, delta_error: f32, delta_time_s: f32) f32 {
+        //accumulate the error for the integral term
+        self.error_accumulator += delta_error;
+
+        //Calculate the three components
+        const proportional = delta_error * self.proportional_gain;
+        const derivative = (delta_error - self.last_error) / delta_time_s * self.derivative_gain;
+        const integral = self.error_accumulator / delta_time_s * self.integral_gain;
+
+        //Record the last error for the derivative term
+        self.last_error = delta_error;
+
+        return proportional + derivative + integral;
     }
 };

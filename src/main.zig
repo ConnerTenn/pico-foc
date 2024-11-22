@@ -54,23 +54,25 @@ export fn main() void {
     csdk.gpio_set_function(15, csdk.GPIO_FUNC_PWM); //WH
 
     const sensor = bldc.sensor.LIS3MDL.create(18, 19, 16, 17, csdk.spi0_hw);
+    const pid = bldc.motor.PIDcontrol.create(
+        3.0,
+        0.0,
+        0.05,
+    );
     var motor = bldc.motor.Motor.create(
         4,
         6,
         7,
         7,
         sensor,
+        pid,
     );
     motor.init();
 
     // bldc.pwm.demo();
     // bldc.sensor.demo();
     // bldc.motor.run();
-    // angleTargetDemo(&motor);
-
-    while (true) {
-        motor.update();
-    }
+    angleTargetDemo(&motor);
 
     // //Blink loop
     // while (true) {
@@ -85,14 +87,13 @@ export fn main() void {
     unreachable;
 }
 
-// fn angleTargetDemo(motor: *bldc.motor.Motor) noreturn {
-
-//     motor.target.velocity = math.tau * 1;
-//     motor.target.torque = 1;
-//     while (true) {
-//         motor.update();
-//     }
-// }
+fn angleTargetDemo(motor: *bldc.motor.Motor) noreturn {
+    motor.target.velocity = math.tau * 1;
+    motor.target.torque = 1;
+    while (true) {
+        motor.update();
+    }
+}
 
 test "trivial" {
     try expect(1 == 1);
