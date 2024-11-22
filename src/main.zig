@@ -46,25 +46,6 @@ export fn main() void {
         });
     }
 
-    // bldc.pwm.demo();
-    // bldc.sensor.demo();
-    // bldc.motor.run();
-    angleTargetDemo();
-
-    // //Blink loop
-    // while (true) {
-    //     stdio.print("Pico!", .{});
-    //     csdk.gpio_put(bldc.LED_PIN, bldc.GPIO_HIGH);
-    //     csdk.sleep_ms(250);
-
-    //     csdk.gpio_put(bldc.LED_PIN, bldc.GPIO_LOW);
-    //     csdk.sleep_ms(250);
-    // }
-
-    unreachable;
-}
-
-fn angleTargetDemo() void {
     csdk.gpio_set_function(8, csdk.GPIO_FUNC_PWM); //UL
     csdk.gpio_set_function(9, csdk.GPIO_FUNC_PWM); //UH
     csdk.gpio_set_function(12, csdk.GPIO_FUNC_PWM); //VL
@@ -82,14 +63,36 @@ fn angleTargetDemo() void {
     );
     motor.init();
 
-    // motor.setTorque(1, 0, 0);
+    // bldc.pwm.demo();
+    // bldc.sensor.demo();
+    // bldc.motor.run();
+    // angleTargetDemo(&motor);
 
-    motor.target.velocity = math.tau * 1;
-    motor.target.torque = 1;
     while (true) {
         motor.update();
     }
+
+    // //Blink loop
+    // while (true) {
+    //     stdio.print("Pico!", .{});
+    //     csdk.gpio_put(bldc.LED_PIN, bldc.GPIO_HIGH);
+    //     csdk.sleep_ms(250);
+
+    //     csdk.gpio_put(bldc.LED_PIN, bldc.GPIO_LOW);
+    //     csdk.sleep_ms(250);
+    // }
+
+    unreachable;
 }
+
+// fn angleTargetDemo(motor: *bldc.motor.Motor) noreturn {
+
+//     motor.target.velocity = math.tau * 1;
+//     motor.target.torque = 1;
+//     while (true) {
+//         motor.update();
+//     }
+// }
 
 test "trivial" {
     try expect(1 == 1);
