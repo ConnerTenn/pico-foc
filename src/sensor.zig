@@ -38,10 +38,18 @@ pub const LIS3MDL = struct {
         }
 
         pub inline fn xF32(self: RawData) f32 {
+            if (self.x_axis == std.math.maxInt(i16) or self.x_axis == std.math.minInt(i16)) {
+                stdio.print("WARNING: x axis maxed out range\n", .{});
+            }
+
             return @as(f32, @floatFromInt(self.x_axis)) / @as(f32, @floatFromInt(std.math.maxInt(i16)));
         }
 
         pub inline fn yF32(self: RawData) f32 {
+            if (self.y_axis == std.math.maxInt(i16) or self.y_axis == std.math.minInt(i16)) {
+                stdio.print("WARNING: y axis maxed out range\n", .{});
+            }
+
             return @as(f32, @floatFromInt(self.y_axis)) / @as(f32, @floatFromInt(std.math.maxInt(i16)));
         }
     };

@@ -1,6 +1,6 @@
 const std = @import("std");
 const math = std.math;
-const tau = std.math.tau;
+const tau = math.tau;
 
 const bldc = @import("bldc.zig");
 

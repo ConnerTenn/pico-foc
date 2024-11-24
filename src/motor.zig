@@ -85,7 +85,7 @@ pub const Motor = struct {
             }
             measured_angle = measured_angle / @as(f32, @floatFromInt(num_samples));
 
-            self.calibration_data[sample_idx] = target_angle - measured_angle;
+            self.calibration_data[sample_idx] = deltaError(f32, measured_angle, target_angle, tau); // target_angle - measured_angle;
         }
 
         stdio.print("Calibration samples:\n", .{});
@@ -110,10 +110,11 @@ pub const Motor = struct {
         // stdio.print("sample_idx:{} ", .{sample_idx});
 
         //Get the compesated angle using the calibration data
-        const compensated_angle = raw_angle + self.calibration_data[sample_idx];
+        var compensated_angle = raw_angle + self.calibration_data[sample_idx];
+        compensated_angle = bldc.mod(f32, compensated_angle, tau, .regular);
 
         // stdio.print("compensated_angle:{d}\n", .{compensated_angle});
-        return bldc.mod(f32, compensated_angle, tau, .regular);
+        return compensated_angle;
     }
 
     pub fn setPosition(self: Self, angle: f32) void {
