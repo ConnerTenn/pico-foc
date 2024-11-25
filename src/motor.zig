@@ -9,7 +9,7 @@ const pwm = bldc.pwm;
 const foc = bldc.foc;
 
 pub fn deltaError(T: type, measured: T, target: T, modulo: T) T {
-    return bldc.mod(T, target - measured + modulo / 2.0, modulo, .regular) - modulo / 2.0;
+    return bldc.mod(T, measured - target + modulo / 2.0, modulo, .regular) - modulo / 2.0;
 }
 
 pub const Motor = struct {
@@ -110,7 +110,7 @@ pub const Motor = struct {
         // stdio.print("sample_idx:{} ", .{sample_idx});
 
         //Get the compesated angle using the calibration data
-        var compensated_angle = raw_angle + self.calibration_data[sample_idx];
+        var compensated_angle = raw_angle - self.calibration_data[sample_idx];
         compensated_angle = bldc.mod(f32, compensated_angle, tau, .regular);
         // stdio.print("{d: >3}:{d: >6.3}  ", .{ sample_idx, self.calibration_data[sample_idx] });
         // stdio.print("{d: >6.3} -> {d: >6.3}  ", .{ raw_angle, compensated_angle });
@@ -141,8 +141,8 @@ pub const Motor = struct {
         const target_angle = 0.0 * tau;
         const delta_error = deltaError(f32, self.sensor_angle, target_angle, tau);
 
-        var torque = (1.0 - math.pow(f32, 1000.0, -@abs(delta_error))) * math.sign(delta_error);
-        torque = math.sign(delta_error) * 0.8;
+        var torque = (1.0 - math.pow(f32, 1000.0, -@abs(delta_error))) * -math.sign(delta_error);
+        // torque = math.sign(delta_error) * 0.8;
 
         const phase = bldc.mod(
             f32,
