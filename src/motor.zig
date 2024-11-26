@@ -69,23 +69,28 @@ pub const Motor = struct {
     pub fn calibrate(self: *Self) void {
         stdio.print("Running Calibration...\n", .{});
 
-        //Loop through every sample
-        for (0..num_calibration_samples) |sample_idx| {
-            //Drive to the target angle
-            const target_angle = tau * @as(f32, @floatFromInt(sample_idx)) / @as(f32, @floatFromInt(num_calibration_samples));
+        const num_sample_iterations = 10;
+        for (0..num_sample_iterations) |repeat_idx| {
+            _ = repeat_idx; // autofix
+            //Loop through every sample
+            for (0..num_calibration_samples) |sample_idx| {
+                //Drive to the target angle
+                const target_angle = tau * @as(f32, @floatFromInt(sample_idx)) / @as(f32, @floatFromInt(num_calibration_samples));
 
-            self.setTorque(1.0, 0.0, target_angle);
-            csdk.sleep_ms(100);
+                self.setTorque(1.0, 0.0, target_angle);
+                csdk.sleep_ms(10);
 
-            //Collect a number of samples and average them
-            const num_samples = 10;
-            var measured_angle: f32 = 0;
-            for (0..num_samples) |_| {
-                measured_angle += self.sensor.getAngle();
+                //Collect a number of samples and average them
+                const measured_angle: f32 = self.sensor.getAngle();
+
+                self.calibration_data[sample_idx] += deltaError(f32, measured_angle, target_angle, tau); // target_angle - measured_angle;
+                stdio.print("\n", .{});
             }
-            measured_angle = measured_angle / @as(f32, @floatFromInt(num_samples));
+        }
 
-            self.calibration_data[sample_idx] = deltaError(f32, measured_angle, target_angle, tau); // target_angle - measured_angle;
+        //Finalize the averaging calculation
+        for (0..num_calibration_samples) |sample_idx| {
+            self.calibration_data[sample_idx] = self.calibration_data[sample_idx] / @as(f32, @floatFromInt(num_sample_iterations));
         }
 
         stdio.print("Calibration samples:\n", .{});
