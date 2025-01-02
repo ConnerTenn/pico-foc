@@ -24,7 +24,7 @@ pub const Motor = struct {
         };
     }
 
-    const num_calibration_samples = 128;
+    const num_calibration_samples = 512;
 
     driver: pwm.PwmDriver,
     windings_per_rotation: u8,
@@ -155,8 +155,10 @@ pub const Motor = struct {
             tau,
             .regular,
         );
-        // stdio.print("derror:{d: >6.3}  torque:{d: >6.3}  phase:{d: >6.3}", .{ delta_error, torque, phase });
-        stdio.print("angle:{d: >6.3}  phase:{d: >6.3}  ", .{ self.sensor_angle, phase });
+        stdio.print("derror:{d: >6.3}  ", .{delta_error});
+        // stdio.print("torque:{d: >6.3}  ", .{ torque });
+        stdio.print("angle:{d: >6.3}  ", .{self.sensor_angle});
+        stdio.print("phase:{d: >6.3}  ", .{phase});
 
         // var torque = self.pid.update(delta_error, delta_time_s);
         if (torque > 1.0) {
