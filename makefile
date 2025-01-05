@@ -41,7 +41,7 @@ program-then-serial:
 
 clean:
 	rm -rf zig-out
-	rm -rf zig-cache
+	rm -rf zig-cache .zig-cache
 	rm -rf $(BUILD_DIR)
 
 clean-all: clean
