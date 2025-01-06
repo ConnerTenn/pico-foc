@@ -3,16 +3,20 @@
 
 setup:
     set x, 0
+
 loop:
+; Test the state of PIN
     jmp PIN pin_high
+
 pin_low:
-	mov isr, x
+    jmp !x, setup ;Only push if x is non-zero
+    mov isr, x
     push
     jmp setup
+
 pin_high:
-	jmp x--, pin_high_pass
-pin_high_pass:
-	jmp loop
+    jmp x--, loop
+    jmp loop
 
 
 .program low_cycle

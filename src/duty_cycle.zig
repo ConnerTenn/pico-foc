@@ -76,9 +76,9 @@ pub const DutyCycle = struct {
         // csdk.pio_sm_set_enabled(self.pio_low.pio_obj, self.pio_low.state_machine, true);
     }
 
-    pub fn readDutyCycle(self: *Self) f32 {
-        const high_time = csdk.pio_sm_get_blocking(self.pio_high.pio_obj, self.pio_high.state_machine);
+    pub fn readDutyCycle(self: *Self) u32 {
+        const high_time = math.maxInt(u32) - csdk.pio_sm_get_blocking(self.pio_high.pio_obj, self.pio_high.state_machine);
         // const low_time = csdk.pio_sm_get_blocking(self.pio_low.pio_obj, self.pio_low.state_machine);
-        return @floatFromInt(high_time);
+        return high_time;
     }
 };
