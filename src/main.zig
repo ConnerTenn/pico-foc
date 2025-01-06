@@ -57,7 +57,8 @@ export fn main() void {
     duty_cycle_sampler.init();
 
     while (true) {
-        stdio.print("Sample: {d:.3}\n", .{duty_cycle_sampler.readDutyCycle()});
+        _ = duty_cycle_sampler.readDutyCycle();
+        // stdio.print("Sample: {d:.3}\n", .{duty_cycle_sampler.readDutyCycle()});
     }
 
     // const sensor = bldc.sensor.LIS3MDL.create(18, 19, 16, 17, csdk.spi0_hw);

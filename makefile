@@ -75,7 +75,7 @@ $(BUILD_DIR)/generated/pico_base/pico: CMakeLists.txt | pico-sdk $(BUILD_DIR)
 	@cd $(BUILD_DIR) && PICO_SDK_PATH=$(CURDIR)/pico-sdk cmake .. && make -j 20 depend
 
 $(BUILD_DIR)/duty_cycle.pio.h: pico-sdk src/duty_cycle.pio | $(BUILD_DIR)
-	rm -f $@
+	rm -f $@ $(BIN) zig-out/lib/libbldc.a
 	@cd $(BUILD_DIR) && PICO_SDK_PATH=$(CURDIR)/pico-sdk cmake .. && make -j 20 motor-demo_duty_cycle_pio_h
 
 $(BIN): zig-out/lib/libbldc.a CMakeLists.txt | pico-sdk Arduino-FOC $(BUILD_DIR)
