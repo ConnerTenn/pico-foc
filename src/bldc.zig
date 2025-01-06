@@ -10,6 +10,7 @@ pub const pwm = @import("pwm.zig");
 pub const foc = @import("foc.zig");
 pub const sensor = @import("sensor.zig");
 pub const spi = @import("spi.zig");
+pub const duty_cycle = @import("duty_cycle.zig");
 
 pub const GPIO_IN = false;
 pub const GPIO_OUT = true;

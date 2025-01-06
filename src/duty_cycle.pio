@@ -1,0 +1,9 @@
+
+.program duty_cycle
+
+loop:
+    jmp x-- post
+post:
+	mov isr, x
+	push
+
