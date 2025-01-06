@@ -42,26 +42,41 @@ pub const DutyCycle = struct {
 
     // pio_obj: csdk.PIO,
     // state_machine: c_uint,
-    pio: Pio,
+    pio_high: Pio,
+    pio_low: Pio,
+    data_buffer: [2]u32 = .{0} ** 2,
 
     pub fn create(gpio_base: c_uint, gpio_count: c_uint) Self {
         // _ = csdk.pio_claim_free_sm_and_add_program_for_gpio_range(program, &pio_obj, &state_machine, &offset, gpio_base, gpio_count, true);
-        const pio = Pio.create(&csdk.duty_cycle_program, gpio_base, gpio_count);
+        // const pio = Pio.create(&csdk.duty_cycle_program, gpio_base, gpio_count);
 
         return Self{
-            .pio = pio,
+            .pio_high = Pio.create(&csdk.high_cycle_program, gpio_base, gpio_count),
+            .pio_low = Pio.create(&csdk.low_cycle_program, gpio_base, gpio_count),
         };
     }
 
-    pub fn init(self: Self) void {
-        var state_machine_config: csdk.pio_sm_config = csdk.duty_cycle_program_get_default_config(self.pio.offset);
-        csdk.sm_config_set_set_pins(&state_machine_config, self.pio.gpio_base, self.pio.gpio_count);
-        _ = csdk.pio_sm_init(self.pio.pio_obj, self.pio.state_machine, self.pio.offset, &state_machine_config);
-        csdk.pio_sm_set_enabled(self.pio.pio_obj, self.pio.state_machine, true);
+    pub fn init(self: *Self) void {
+        //High Cycle
+        //Configure the state machine
+        var high_cycle_state_machine_config: csdk.pio_sm_config = csdk.high_cycle_program_get_default_config(self.pio_high.offset);
+        _ = csdk.pio_sm_init(self.pio_high.pio_obj, self.pio_high.state_machine, self.pio_high.offset, &high_cycle_state_machine_config);
+        //Start the state machine
+        csdk.pio_sm_set_enabled(self.pio_high.pio_obj, self.pio_high.state_machine, true);
+
+        //Low Cycle
+        //Configure the state machine
+        var low_cycle_state_machine_config: csdk.pio_sm_config = csdk.low_cycle_program_get_default_config(self.pio_low.offset);
+        _ = csdk.pio_sm_init(self.pio_low.pio_obj, self.pio_low.state_machine, self.pio_low.offset, &low_cycle_state_machine_config);
+        //Start the state machine
+        csdk.pio_sm_set_enabled(self.pio_low.pio_obj, self.pio_low.state_machine, true);
     }
 
-    pub fn readDutyCycle(self: Self) f32 {
-        const sample = csdk.pio_sm_get_blocking(self.pio.pio_obj, self.pio.state_machine);
-        return @floatFromInt(sample);
+    pub fn readDutyCycle(self: *Self) f32 {
+        const high_time = csdk.pio_sm_get_blocking(self.pio_high.pio_obj, self.pio_high.state_machine);
+        const low_time = csdk.pio_sm_get_blocking(self.pio_low.pio_obj, self.pio_low.state_machine);
+        _ = low_time; // autofix
+        // const sample = self.data_buffer[0];
+        return @floatFromInt(high_time);
     }
 };

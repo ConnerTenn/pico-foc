@@ -1,5 +1,14 @@
 
-.program duty_cycle
+.program high_cycle
+
+loop:
+    jmp x-- post
+post:
+	mov isr, x
+	push
+
+
+.program low_cycle
 
 loop:
     jmp x-- post
