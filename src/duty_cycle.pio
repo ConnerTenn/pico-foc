@@ -1,18 +1,25 @@
 
 .program high_cycle
 
+setup:
+    set x, 0
 loop:
-    jmp x-- post
-post:
+    jmp PIN pin_high
+pin_low:
 	mov isr, x
-	push
+    push
+    jmp setup
+pin_high:
+	jmp x--, pin_high_pass
+pin_high_pass:
+	jmp loop
 
 
 .program low_cycle
 
-loop:
-    jmp x-- post
-post:
-	mov isr, x
-	push
+; loop:
+;     jmp x-- post
+; post:
+; 	mov isr, x
+; 	push
 
