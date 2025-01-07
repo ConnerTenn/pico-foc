@@ -92,6 +92,6 @@ pub const DutyCycle = struct {
 
     fn _getAngle(ctx: *anyopaque) f32 {
         const self: *Self = @alignCast(@ptrCast(ctx));
-        return self.readDutyCycle() * math.tau;
+        return math.tau - self.readDutyCycle() * math.tau;
     }
 };

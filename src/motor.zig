@@ -59,7 +59,7 @@ pub const Motor = struct {
         //Settling time before measuring the angle bias
         csdk.sleep_ms(1000);
 
-        // self.calibrate();
+        self.calibrate();
 
         //Update the last time
         self.last_time_us = csdk.get_absolute_time();
@@ -68,7 +68,7 @@ pub const Motor = struct {
     pub fn calibrate(self: *Self) void {
         stdio.print("Running Calibration...\n", .{});
 
-        const num_sample_iterations = 10;
+        const num_sample_iterations = 2;
         for (0..num_sample_iterations) |repeat_idx| {
             _ = repeat_idx; // autofix
             //Loop through every sample
@@ -145,32 +145,32 @@ pub const Motor = struct {
         const target_angle = 0.0 * tau;
         const delta_error = deltaError(f32, self.sensor_angle, target_angle, tau);
 
-        var torque = (1.0 - math.pow(f32, 1000.0, -@abs(delta_error))) * -math.sign(delta_error);
+        const torque = (1.0 - math.pow(f32, 100.0, -@abs(delta_error))) * -math.sign(delta_error);
         // torque = math.sign(delta_error) * 0.8;
 
-        const phase = bldc.mod(
-            f32,
-            self.sensor_angle * @as(f32, @floatFromInt(self.windings_per_rotation)),
-            tau,
-            .regular,
-        );
-        stdio.print("derror:{d: >6.3}  ", .{delta_error});
-        // stdio.print("torque:{d: >6.3}  ", .{ torque });
-        stdio.print("angle:{d: >6.3}  ", .{self.sensor_angle});
-        stdio.print("phase:{d: >6.3}  ", .{phase});
+        // const phase = bldc.mod(
+        //     f32,
+        //     self.sensor_angle * @as(f32, @floatFromInt(self.windings_per_rotation)),
+        //     tau,
+        //     .regular,
+        // );
+        // stdio.print("derror:{d: >6.3}  ", .{delta_error});
+        // // stdio.print("torque:{d: >6.3}  ", .{ torque });
+        // stdio.print("angle:{d: >6.3}  ", .{self.sensor_angle});
+        // stdio.print("phase:{d: >6.3}  ", .{phase});
 
         // var torque = self.pid.update(delta_error, delta_time_s);
-        if (torque > 1.0) {
-            torque = 1.0;
-        } else if (torque < -1.0) {
-            torque = -1.0;
-        }
+        // if (torque > 1.0) {
+        //     torque = 1.0;
+        // } else if (torque < -1.0) {
+        //     torque = -1.0;
+        // }
 
-        // self.setTorque(0.0, torque, self.state.angle);
-        self.setTorque(1.0, 0, self.state.angle);
+        self.setTorque(0.0, torque, self.state.angle);
+        // self.setTorque(1.0, 0, self.state.angle);
 
         self.last_time_us = current_time_us;
-        stdio.print("\n", .{});
+        // stdio.print("\n", .{});
     }
 
     pub fn format(self: Self, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {

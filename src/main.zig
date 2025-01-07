@@ -82,7 +82,7 @@ export fn main() void {
     // // bldc.pwm.demo();
     // // bldc.sensor.demo();
     // // bldc.motor.run();
-    // angleTargetDemo(&motor);
+    angleTargetDemo(&motor);
 
     // //Blink loop
     // while (true) {
