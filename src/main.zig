@@ -56,26 +56,28 @@ export fn main() void {
     var duty_cycle_sampler = bldc.duty_cycle.DutyCycle.create(19, 1);
     duty_cycle_sampler.init();
 
-    while (true) {
-        _ = duty_cycle_sampler.readDutyCycle();
-        // stdio.print("Sample: {d:.3}\n", .{duty_cycle_sampler.readDutyCycle()});
-    }
+    // while (true) {
+    //     _ = duty_cycle_sampler.readDutyCycle();
+    //     // stdio.print("Sample: {d:.3}\n", .{duty_cycle_sampler.readDutyCycle()});
+    // }
 
     // const sensor = bldc.sensor.LIS3MDL.create(18, 19, 16, 17, csdk.spi0_hw);
-    // const pid = bldc.motor.PIDcontrol.create(
-    //     3.0,
-    //     0.0,
-    //     0.05,
-    // );
-    // var motor = bldc.motor.Motor.create(
-    //     4,
-    //     6,
-    //     7,
-    //     7,
-    //     sensor,
-    //     pid,
-    // );
-    // motor.init();
+    const sensor = duty_cycle_sampler.getSensor();
+    const pid = bldc.motor.PIDcontrol.create(
+        3.0,
+        0.0,
+        0.05,
+    );
+    var motor = bldc.motor.Motor.create(
+        4,
+        6,
+        7,
+        7,
+        sensor,
+        pid,
+    );
+    motor.init();
+    // angleSweep(&motor);
 
     // // bldc.pwm.demo();
     // // bldc.sensor.demo();
@@ -93,6 +95,24 @@ export fn main() void {
     // }
 
     unreachable;
+}
+
+fn angleSweep(motor: *bldc.motor.Motor) void {
+    var target_angle: f32 = 0.0;
+    const start_time_us = csdk.get_absolute_time();
+    const rot_per_sec = 0.1;
+
+    while (target_angle < math.tau) {
+        //Drive to the target angle
+        motor.setTorque(1.0, 0.0, target_angle);
+        stdio.print("\n", .{});
+
+        //Update target angle
+        const current_time_us = csdk.get_absolute_time();
+        const us_per_sec = 1_000_000.0;
+
+        target_angle = rot_per_sec * tau * @as(f32, @floatFromInt(current_time_us - start_time_us)) / us_per_sec;
+    }
 }
 
 fn angleTargetDemo(motor: *bldc.motor.Motor) noreturn {

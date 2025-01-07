@@ -79,7 +79,19 @@ pub const DutyCycle = struct {
         const high_time = math.maxInt(u32) - csdk.pio_sm_get_blocking(self.pio_high.pio_obj, self.pio_high.state_machine);
         const low_time = math.maxInt(u32) - csdk.pio_sm_get_blocking(self.pio_low.pio_obj, self.pio_low.state_machine);
         const ratio = @as(f32, @floatFromInt(high_time)) / @as(f32, @floatFromInt(high_time + low_time));
-        stdio.print("high:low {d: >7}:{d: >7}   {d:.4}\n", .{ high_time, low_time, ratio });
+        // stdio.print("high:low {d: >7}:{d: >7}   {d:.4}\n", .{ high_time, low_time, ratio });
         return ratio;
+    }
+
+    pub fn getSensor(self: *Self) bldc.sensor.Sensor {
+        return bldc.sensor.Sensor{
+            .ctx = self,
+            .getAngleFn = _getAngle,
+        };
+    }
+
+    fn _getAngle(ctx: *anyopaque) f32 {
+        const self: *Self = @alignCast(@ptrCast(ctx));
+        return self.readDutyCycle() * math.tau;
     }
 };
