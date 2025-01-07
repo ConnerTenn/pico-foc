@@ -150,6 +150,7 @@ pub fn build(b: *Build) void {
         // "./build/_deps/picotool-build/lib/mbedtls/include",
 
         "./build/generated/pico_base",
+        "./build",
     };
 
     inline for (includes) |include| {

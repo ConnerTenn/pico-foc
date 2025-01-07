@@ -62,8 +62,10 @@ pub const csdk = import: {
             @cInclude("pico/stdlib.h");
             @cInclude("hardware/clocks.h");
             @cInclude("hardware/pwm.h");
+            @cInclude("hardware/pio.h");
             // @cInclude("pico/time.h");
             @cInclude("hardware/spi.h");
+            @cInclude("duty_cycle.pio.h");
         });
     }
     //We must be in a test environment

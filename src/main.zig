@@ -53,26 +53,34 @@ export fn main() void {
     csdk.gpio_set_function(14, csdk.GPIO_FUNC_PWM); //WL
     csdk.gpio_set_function(15, csdk.GPIO_FUNC_PWM); //WH
 
-    const sensor = bldc.sensor.LIS3MDL.create(18, 19, 16, 17, csdk.spi0_hw);
-    const pid = bldc.motor.PIDcontrol.create(
-        3.0,
-        0.0,
-        0.05,
-    );
-    var motor = bldc.motor.Motor.create(
-        4,
-        6,
-        7,
-        7,
-        sensor,
-        pid,
-    );
-    motor.init();
+    var duty_cycle_sampler = bldc.duty_cycle.DutyCycle.create(19, 1);
+    duty_cycle_sampler.init();
 
-    // bldc.pwm.demo();
-    // bldc.sensor.demo();
-    // bldc.motor.run();
-    angleTargetDemo(&motor);
+    while (true) {
+        _ = duty_cycle_sampler.readDutyCycle();
+        // stdio.print("Sample: {d:.3}\n", .{duty_cycle_sampler.readDutyCycle()});
+    }
+
+    // const sensor = bldc.sensor.LIS3MDL.create(18, 19, 16, 17, csdk.spi0_hw);
+    // const pid = bldc.motor.PIDcontrol.create(
+    //     3.0,
+    //     0.0,
+    //     0.05,
+    // );
+    // var motor = bldc.motor.Motor.create(
+    //     4,
+    //     6,
+    //     7,
+    //     7,
+    //     sensor,
+    //     pid,
+    // );
+    // motor.init();
+
+    // // bldc.pwm.demo();
+    // // bldc.sensor.demo();
+    // // bldc.motor.run();
+    // angleTargetDemo(&motor);
 
     // //Blink loop
     // while (true) {

@@ -22,10 +22,13 @@ add_executable(${PROJECT_NAME}
 pico_enable_stdio_uart(${PROJECT_NAME} 0)
 pico_enable_stdio_usb(${PROJECT_NAME} 1)
 
+
+pico_generate_pio_header(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/src/duty_cycle.pio)
+
 # Add libraries to the build
 add_library(zig_library STATIC IMPORTED)
 set_property(TARGET zig_library PROPERTY IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/zig-out/lib/libbldc.a)
 
-target_link_libraries(${PROJECT_NAME} zig_library pico_stdlib hardware_spi)
+target_link_libraries(${PROJECT_NAME} zig_library pico_stdlib hardware_spi hardware_pio)
 
 pico_add_extra_outputs(${PROJECT_NAME})
