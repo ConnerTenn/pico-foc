@@ -37,7 +37,6 @@ pub const Motor = struct {
     limits: Parameters(?f32) = .{ .angle = null, .velocity = null, .torque = null, .acceleration = null },
     state: Parameters(f32) = .{ .angle = 0, .velocity = 0, .torque = 0, .acceleration = 0 },
 
-    sensor_angle: f32 = 0,
     pid: PIDcontrol,
 
     last_time_us: csdk.absolute_time_t = 0,
@@ -137,46 +136,49 @@ pub const Motor = struct {
         const current_time_us = csdk.get_absolute_time();
         const delta_time_us = current_time_us - self.last_time_us;
         const delta_time_s: f32 = @as(f32, @floatFromInt(delta_time_us)) / (1000.0 * 1000.0);
-        _ = delta_time_s; // autofix
 
-        self.sensor_angle = self.getAngle();
-        self.state.angle = self.sensor_angle;
+        self.state.angle = self.getAngle();
 
         const target_angle = 0.0 * tau;
         const repetition = 6.0;
-        const delta_error = deltaError(f32, self.sensor_angle * repetition, target_angle * repetition, tau);
+        const delta_error = deltaError(f32, self.state.angle * repetition, target_angle * repetition, tau);
 
-        // const torque = (1.0 - math.pow(f32, 1.2, -@abs(delta_error))) * -math.sign(delta_error);
-        // const torque = -math.sin(delta_error / 2.0);
+        const torque_fn = struct {
+            fn exponential_sigmoid(delta_err: f32) f32 {
+                return (1.0 - math.pow(f32, 1.2, -@abs(delta_err))) * -math.sign(delta_err);
+            }
 
-        //https://www.desmos.com/calculator/04fgjt2y2l
-        const skew_param = 2.0;
-        const input_param = bldc.mod(f32, delta_error, tau, .regular) / math.pi - 1.0;
-        const skew = math.pow(f32, @abs(input_param), skew_param) * math.sign(input_param);
-        const torque = -math.sin(tau * (skew + 1.0) / 2.0);
+            fn sin(delta_err: f32) f32 {
+                return -math.sin(delta_err / 2.0);
+            }
 
-        // torque = math.sign(delta_error) * 0.8;
+            fn skewed_sin(delta_err: f32) f32 {
+                //https://www.desmos.com/calculator/04fgjt2y2l
+                const skew_param = 2.0;
+                const input_param = bldc.mod(f32, delta_err, tau, .regular) / math.pi - 1.0;
+                const skew = math.pow(f32, @abs(input_param), skew_param) * math.sign(input_param);
+                return -math.sin(tau * (skew + 1.0) / 2.0);
+            }
+
+            fn pid(delta_err: f32) f32 {
+                return self.pid.update(delta_err, delta_time_s);
+            }
+        }.exponential_sigmoid;
+
+        const torque = torque_fn(delta_error);
 
         // const phase = bldc.mod(
         //     f32,
-        //     self.sensor_angle * @as(f32, @floatFromInt(self.windings_per_rotation)),
+        //     self.state.angle * @as(f32, @floatFromInt(self.windings_per_rotation)),
         //     tau,
         //     .regular,
         // );
         // stdio.print("derror:{d: >6.3}  ", .{delta_error});
         // stdio.print("torque:{d: >6.3}  ", .{torque});
-        // stdio.print("angle:{d: >6.3}  ", .{self.sensor_angle});
+        // stdio.print("angle:{d: >6.3}  ", .{self.state.angle});
         // stdio.print("phase:{d: >6.3}  ", .{phase});
 
-        // var torque = self.pid.update(delta_error, delta_time_s);
-        // if (torque > 1.0) {
-        //     torque = 1.0;
-        // } else if (torque < -1.0) {
-        //     torque = -1.0;
-        // }
-
         self.setTorque(0.0, torque, self.state.angle);
-        // self.setTorque(1.0, 0, self.state.angle);
 
         self.last_time_us = current_time_us;
         // stdio.print("\n", .{});
@@ -186,10 +188,10 @@ pub const Motor = struct {
         _ = fmt;
         _ = options;
 
-        try writer.print("Position: {d:.3} ", .{self.sensor_angle / tau});
+        try writer.print("Position: {d:.3} ", .{self.state.angle / tau});
         try bldc.printPositionGraph(
             30,
-            self.sensor_angle,
+            self.state.angle,
             0,
             tau,
             writer,
