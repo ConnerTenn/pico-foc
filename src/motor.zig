@@ -143,9 +143,18 @@ pub const Motor = struct {
         self.state.angle = self.sensor_angle;
 
         const target_angle = 0.0 * tau;
-        const delta_error = deltaError(f32, self.sensor_angle, target_angle, tau);
+        const repetition = 6.0;
+        const delta_error = deltaError(f32, self.sensor_angle * repetition, target_angle * repetition, tau);
 
-        const torque = (1.0 - math.pow(f32, 100.0, -@abs(delta_error))) * -math.sign(delta_error);
+        // const torque = (1.0 - math.pow(f32, 1.2, -@abs(delta_error))) * -math.sign(delta_error);
+        // const torque = -math.sin(delta_error / 2.0);
+
+        //https://www.desmos.com/calculator/04fgjt2y2l
+        const skew_param = 2.0;
+        const input_param = bldc.mod(f32, delta_error, tau, .regular) / math.pi - 1.0;
+        const skew = math.pow(f32, @abs(input_param), skew_param) * math.sign(input_param);
+        const torque = -math.sin(tau * (skew + 1.0) / 2.0);
+
         // torque = math.sign(delta_error) * 0.8;
 
         // const phase = bldc.mod(
@@ -155,7 +164,7 @@ pub const Motor = struct {
         //     .regular,
         // );
         // stdio.print("derror:{d: >6.3}  ", .{delta_error});
-        // // stdio.print("torque:{d: >6.3}  ", .{ torque });
+        // stdio.print("torque:{d: >6.3}  ", .{torque});
         // stdio.print("angle:{d: >6.3}  ", .{self.sensor_angle});
         // stdio.print("phase:{d: >6.3}  ", .{phase});
 
