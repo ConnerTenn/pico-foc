@@ -8,6 +8,9 @@ const stdio = bldc.stdio;
 const pwm = bldc.pwm;
 const foc = bldc.foc;
 
+//Output domain: [-modulo/2, modulo/2]
+//Positive when measured > target
+//Negative when measured < target
 pub fn deltaError(T: type, measured: T, target: T, modulo: T) T {
     return bldc.mod(T, measured - target + modulo / 2.0, modulo, .regular) - modulo / 2.0;
 }
@@ -82,7 +85,7 @@ pub const Motor = struct {
                 const measured_angle: f32 = self.sensor.getAngle();
 
                 self.calibration_data[sample_idx] += deltaError(f32, measured_angle, target_angle, tau); // target_angle - measured_angle;
-                stdio.print("\n", .{});
+                // stdio.print("\n", .{});
             }
         }
 
@@ -163,7 +166,7 @@ pub const Motor = struct {
             fn pid(delta_err: f32) f32 {
                 return self.pid.update(delta_err, delta_time_s);
             }
-        }.exponential_sigmoid;
+        }.skewed_sin;
 
         const torque = torque_fn(delta_error);
 

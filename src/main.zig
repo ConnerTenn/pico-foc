@@ -84,16 +84,6 @@ export fn main() void {
     // // bldc.motor.run();
     angleTargetDemo(&motor);
 
-    // //Blink loop
-    // while (true) {
-    //     stdio.print("Pico!", .{});
-    //     csdk.gpio_put(bldc.LED_PIN, bldc.GPIO_HIGH);
-    //     csdk.sleep_ms(250);
-
-    //     csdk.gpio_put(bldc.LED_PIN, bldc.GPIO_LOW);
-    //     csdk.sleep_ms(250);
-    // }
-
     unreachable;
 }
 
