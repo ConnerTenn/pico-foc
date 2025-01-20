@@ -6,6 +6,16 @@ const bldc = @import("bldc.zig");
 const csdk = bldc.csdk;
 const stdio = bldc.stdio;
 
+pub const Sensor = struct {
+    const Self = @This();
+    ctx: *anyopaque,
+    getAngleFn: *const fn (ctx: *anyopaque) f32,
+
+    pub fn getAngle(self: Self) f32 {
+        return self.getAngleFn(self.ctx);
+    }
+};
+
 pub const LIS3MDL = struct {
     const Self = @This();
 
@@ -38,10 +48,18 @@ pub const LIS3MDL = struct {
         }
 
         pub inline fn xF32(self: RawData) f32 {
+            if (self.x_axis == std.math.maxInt(i16) or self.x_axis == std.math.minInt(i16)) {
+                stdio.print("WARNING: x axis maxed out range\n", .{});
+            }
+
             return @as(f32, @floatFromInt(self.x_axis)) / @as(f32, @floatFromInt(std.math.maxInt(i16)));
         }
 
         pub inline fn yF32(self: RawData) f32 {
+            if (self.y_axis == std.math.maxInt(i16) or self.y_axis == std.math.minInt(i16)) {
+                stdio.print("WARNING: y axis maxed out range\n", .{});
+            }
+
             return @as(f32, @floatFromInt(self.y_axis)) / @as(f32, @floatFromInt(std.math.maxInt(i16)));
         }
     };
@@ -69,18 +87,15 @@ pub const LIS3MDL = struct {
         data_rate_20_HZ = 0b1010, // 20 Hz
         data_rate_40_HZ = 0b1100, // 40 Hz
         data_rate_80_HZ = 0b1110, // 80 Hz
-        data_rate_155_HZ = 0b0001, // 155 Hz (FAST_ODR + UHP)
-        data_rate_300_HZ = 0b0011, // 300 Hz (FAST_ODR + HP)
-        data_rate_560_HZ = 0b0101, // 560 Hz (FAST_ODR + MP)
-        data_rate_1000_HZ = 0b0111, // 1000 Hz (FAST_ODR + LP)
+        fast_output_data_rate = 0b0001, // 80 Hz+
     };
 
     // The magnetometer performance mode
     const PerformanceMode = enum(u2) {
-        low_power_mode = 0b00, // Low power mode
-        medium_mode = 0b01, // Medium performance mode
-        high_mode = 0b10, // High performance mode
-        ultra_high_mode = 0b11, // Ultra-high performance mode
+        low_mode_1000_HZ = 0b00, // Low power mode
+        medium_mode_560_HZ = 0b01, // Medium performance mode
+        high_mode_300_HZ = 0b10, // High performance mode
+        ultra_high_mode_155_HZ = 0b11, // Ultra-high performance mode
     };
 
     // The magnetometer operation mode
@@ -188,6 +203,24 @@ pub const LIS3MDL = struct {
 
     pub fn init(self: Self) void {
         self.spi.init();
+
+        var ctrl_reg1 = self.spi.readReg(LIS3MDL.CtrlReg1);
+        ctrl_reg1.operating_mode_xy = .low_mode_1000_HZ;
+        ctrl_reg1.data_rate = .fast_output_data_rate;
+        self.spi.writeReg(LIS3MDL.CtrlReg1, ctrl_reg1);
+
+        var ctrl_reg2 = self.spi.readReg(LIS3MDL.CtrlReg2);
+        ctrl_reg2.range = .range_16_gauss;
+        self.spi.writeReg(LIS3MDL.CtrlReg2, ctrl_reg2);
+
+        var ctrl_reg3 = self.spi.readReg(LIS3MDL.CtrlReg3);
+        ctrl_reg3.mode = .continuous_mode;
+        self.spi.writeReg(LIS3MDL.CtrlReg3, ctrl_reg3);
+
+        var ctrl_reg4 = self.spi.readReg(LIS3MDL.CtrlReg4);
+        ctrl_reg4.ble = .little;
+        ctrl_reg4.operating_mode_z = .low_mode_1000_HZ;
+        self.spi.writeReg(LIS3MDL.CtrlReg4, ctrl_reg4);
     }
 
     fn dataAvailable(self: Self) void {
@@ -195,7 +228,7 @@ pub const LIS3MDL = struct {
         return status.zyxda;
     }
 
-    fn getRawData(self: Self) RawData {
+    pub fn getRawData(self: Self) RawData {
         const x_l = @as(u16, self.spi.readReg(OutX_L).lower);
         const x_h = @as(u16, self.spi.readReg(OutX_H).higher);
         const y_l = @as(u16, self.spi.readReg(OutY_L).lower);
@@ -210,7 +243,7 @@ pub const LIS3MDL = struct {
         };
     }
 
-    fn getAngle(self: Self) f32 {
+    pub fn getAngle(self: Self) f32 {
         const raw_data = self.getRawData();
 
         const x_axis: f32 = raw_data.xF32();
@@ -243,23 +276,23 @@ pub const LIS3MDL = struct {
             else => unreachable,
         };
     }
+
+    pub fn getSensor(self: *Self) Sensor {
+        return Sensor{
+            .ctx = self,
+            .getAngleFn = _getAngle,
+        };
+    }
+
+    fn _getAngle(ctx: *anyopaque) f32 {
+        const self: *Self = @alignCast(@ptrCast(ctx));
+        return self.getAngle();
+    }
 };
 
 pub fn demo() noreturn {
     var sensor = LIS3MDL.create(18, 19, 16, 17, csdk.spi0_hw);
     sensor.init();
-
-    var ctrl_reg1 = sensor.spi.readReg(LIS3MDL.CtrlReg1);
-    ctrl_reg1.operating_mode_xy = .ultra_high_mode;
-    sensor.spi.writeReg(LIS3MDL.CtrlReg1, ctrl_reg1);
-
-    var ctrl_reg2 = sensor.spi.readReg(LIS3MDL.CtrlReg2);
-    ctrl_reg2.range = .range_12_gauss;
-    sensor.spi.writeReg(LIS3MDL.CtrlReg2, ctrl_reg2);
-
-    var ctrl_reg3 = sensor.spi.readReg(LIS3MDL.CtrlReg3);
-    ctrl_reg3.mode = .continuous_mode;
-    sensor.spi.writeReg(LIS3MDL.CtrlReg3, ctrl_reg3);
 
     stdio.print("CtrlReg1: {}\n", .{sensor.spi.readReg(LIS3MDL.CtrlReg1)});
     stdio.print("CtrlReg2: {}\n", .{sensor.spi.readReg(LIS3MDL.CtrlReg2)});

@@ -1,6 +1,49 @@
 const std = @import("std");
 const Build = std.Build;
 
+fn str_split(input: []const u8, delimiter: u8) ![][]const u8 {
+    var list = std.ArrayList([]const u8).init(std.heap.page_allocator);
+    defer list.deinit();
+
+    var it = std.mem.tokenize(input, delimiter);
+    while (it.next()) |token| {
+        try list.append(token);
+    }
+
+    return list.toOwnedSlice();
+}
+
+fn str_replace(allocator: std.mem.Allocator, str: []const u8, find: []const u8, repl: []const u8) ![]const u8 {
+    if (find.len == 0 or str.len == 0 or find.len > str.len) {
+        return str;
+    }
+
+    const index = std.mem.indexOf(u8, str, find) orelse return str;
+
+    const start = str[0..index];
+    const end = str[index + find.len ..];
+
+    // Allocate space for the new string.
+    var buffer = try allocator.alloc(u8, start.len + repl.len + end.len);
+
+    @memcpy(buffer[0..start.len], start);
+    @memcpy(buffer[start.len..(start.len + repl.len)], repl);
+    @memcpy(buffer[(start.len + repl.len)..], end);
+
+    return buffer;
+}
+
+fn str_concat(allocator: *std.mem.Allocator, str1: []const u8, str2: []const u8) ![]const u8 {
+    // Allocate space for the new string.
+    var buffer = try allocator.alloc(u8, str1.len + str2.len);
+
+    // Copy each string into the allocated space.
+    std.mem.copy(u8, buffer[0..str1.len], str1);
+    std.mem.copy(u8, buffer[str1.len..], str2);
+
+    return buffer;
+}
+
 pub fn build(b: *Build) void {
     const target = std.Target.Query{
         .os_tag = .freestanding,
@@ -150,19 +193,42 @@ pub fn build(b: *Build) void {
         // "./build/_deps/picotool-build/lib/mbedtls/include",
 
         "./build/generated/pico_base",
+        "./build",
     };
 
     inline for (includes) |include| {
         lib.addIncludePath(b.path(include));
     }
 
+    //Run the which command to find the real install location of arm-none-eabi-gcc
+    //On Nixos, it is under a hash so it's bad practice to reference it directly
+    const cmd_result = std.process.Child.run(.{
+        .allocator = std.heap.page_allocator,
+        .argv = &[_][]const u8{ "which", "arm-none-eabi-gcc" }, //: []const []const u8,
+        //cwd: ?[]const u8 = null,
+        //cwd_dir: ?fs.Dir = null,
+        // env_map: ?*const EnvMap = null,
+        // max_output_bytes: usize = 50 * 1024,
+        // expand_arg0: Arg0Expand = .no_expand,
+    }) catch |err| {
+        std.debug.panic("Failed to run cmd: {}", .{err});
+    };
+
+    std.debug.print("Location of arm-none-eabi-gcc: {s}\n", .{
+        cmd_result.stdout,
+    });
+
+    //Find the location of the include
+    //Note: There's a sneaky newline hiding at the end of stdout
+    const arm_gcc_inc_dir = str_replace(b.allocator, cmd_result.stdout, "/bin/arm-none-eabi-gcc\n", "/arm-none-eabi/include") catch "";
+
     const arm_includes = [_][]const u8{
-        "/nix/store/3w7l1k6ip6x0yrl7pfqx7mhpr0j0mrrs-gcc-arm-embedded-13.2.rel1/bin/../lib/gcc/arm-none-eabi/13.2.1/include",
-        "/nix/store/3w7l1k6ip6x0yrl7pfqx7mhpr0j0mrrs-gcc-arm-embedded-13.2.rel1/bin/../lib/gcc/arm-none-eabi/13.2.1/include-fixed",
-        "/nix/store/3w7l1k6ip6x0yrl7pfqx7mhpr0j0mrrs-gcc-arm-embedded-13.2.rel1/bin/../lib/gcc/arm-none-eabi/13.2.1/../../../../arm-none-eabi/include",
+        // "/nix/store/xds2q9qipa6123ycfbak5g5xpf0bxivf-gcc-arm-embedded-13.3.rel1/arm-none-eabi/include",
+        arm_gcc_inc_dir,
     };
 
     inline for (arm_includes) |include| {
+        std.debug.print("Adding include [{}]: {s} \n", .{ include.len, include });
         lib.addIncludePath(.{
             .cwd_relative = include,
         });

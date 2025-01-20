@@ -6,3 +6,5 @@ zig-out/
 pico-sdk/
 pico-examples/
 Arduino-FOC/
+
+.zig-cache/

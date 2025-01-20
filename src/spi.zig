@@ -28,7 +28,7 @@ pub const SPI = struct {
         csdk.gpio_put(self.cs_pin, bldc.GPIO_HIGH);
         csdk.gpio_set_dir(self.cs_pin, bldc.GPIO_OUT);
 
-        const baudrate = csdk.spi_init(self.hardware_spi, 1 * 1000 * 1000); //1MHz.
+        const baudrate = csdk.spi_init(self.hardware_spi, 5 * 1000 * 1000); //5MHz.
         stdio.print("SPI baudrate:{}\n", .{baudrate});
         csdk.gpio_set_function(self.sck_pin, csdk.GPIO_FUNC_SPI);
         csdk.gpio_set_function(self.tx_pin, csdk.GPIO_FUNC_SPI);
