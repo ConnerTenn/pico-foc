@@ -1,9 +1,11 @@
 const std = @import("std");
 const math = std.math;
 
+const pico = @import("pico");
+const csdk = pico.csdk;
+const stdio = pico.stdio;
+
 const bldc = @import("bldc.zig");
-const stdio = bldc.stdio;
-const csdk = bldc.csdk;
 const foc = bldc.foc;
 
 pub const Slice = c_uint;

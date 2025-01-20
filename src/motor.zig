@@ -2,9 +2,11 @@ const std = @import("std");
 const math = std.math;
 const tau = math.tau;
 
+const pico = @import("pico");
+const csdk = pico.csdk;
+const stdio = pico.stdio;
+
 const bldc = @import("bldc.zig");
-const csdk = bldc.csdk;
-const stdio = bldc.stdio;
 const pwm = bldc.pwm;
 const foc = bldc.foc;
 

@@ -1,14 +1,16 @@
 const std = @import("std");
 const math = std.math;
 
+const pico = @import("pico");
+const csdk = pico.csdk;
+const stdio = pico.stdio;
+
 const bldc = @import("bldc.zig");
-const stdio = bldc.stdio;
-const csdk = bldc.csdk;
 const foc = bldc.foc;
 
-// const duty_cycle_pio = @cImport({
-//     @cInclude("duty_cycle.pio.h");
-// });
+const duty_cycle_pio = @cImport({
+    @cInclude("duty_cycle.pio.h");
+});
 
 pub const Pio = struct {
     const Self = @This();
@@ -50,8 +52,8 @@ pub const DutyCycle = struct {
         // const pio = Pio.create(&csdk.duty_cycle_program, gpio_base, gpio_count);
 
         return Self{
-            .pio_high = Pio.create(&csdk.high_cycle_program, gpio_base, gpio_count),
-            .pio_low = Pio.create(&csdk.low_cycle_program, gpio_base, gpio_count),
+            .pio_high = Pio.create(@ptrCast(&duty_cycle_pio.high_cycle_program), gpio_base, gpio_count),
+            .pio_low = Pio.create(@ptrCast(&duty_cycle_pio.low_cycle_program), gpio_base, gpio_count),
         };
     }
 
@@ -60,7 +62,7 @@ pub const DutyCycle = struct {
         //Configure the pin direction
         _ = csdk.pio_sm_set_consecutive_pindirs(self.pio_high.pio_obj, self.pio_high.state_machine, self.pio_high.gpio_base, self.pio_high.gpio_count, false);
         //Configure the state machine
-        var high_cycle_state_machine_config: csdk.pio_sm_config = csdk.high_cycle_program_get_default_config(self.pio_high.offset);
+        var high_cycle_state_machine_config: csdk.pio_sm_config = @bitCast(duty_cycle_pio.high_cycle_program_get_default_config(self.pio_high.offset));
         csdk.sm_config_set_jmp_pin(&high_cycle_state_machine_config, self.pio_high.gpio_base);
         //Start the state machine
         _ = csdk.pio_sm_init(self.pio_high.pio_obj, self.pio_high.state_machine, self.pio_high.offset, &high_cycle_state_machine_config);
@@ -68,7 +70,7 @@ pub const DutyCycle = struct {
 
         //Low Cycle
         //Configure the state machine
-        var low_cycle_state_machine_config: csdk.pio_sm_config = csdk.low_cycle_program_get_default_config(self.pio_low.offset);
+        var low_cycle_state_machine_config: csdk.pio_sm_config = @bitCast(duty_cycle_pio.low_cycle_program_get_default_config(self.pio_low.offset));
         csdk.sm_config_set_jmp_pin(&low_cycle_state_machine_config, self.pio_low.gpio_base);
         //Start the state machine
         _ = csdk.pio_sm_init(self.pio_low.pio_obj, self.pio_low.state_machine, self.pio_low.offset, &low_cycle_state_machine_config);

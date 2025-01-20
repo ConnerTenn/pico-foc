@@ -2,9 +2,11 @@ const std = @import("std");
 const math = std.math;
 const tau = math.tau;
 
+const pico = @import("pico");
+const csdk = pico.csdk;
+const stdio = pico.stdio;
+
 const bldc = @import("bldc.zig");
-const csdk = bldc.csdk;
-const stdio = bldc.stdio;
 
 const expect = @import("std").testing.expect;
 
@@ -35,8 +37,9 @@ export fn main() void {
     printFrequencies();
 
     //Init GPIO
-    csdk.gpio_init(bldc.LED_PIN);
-    csdk.gpio_set_dir(bldc.LED_PIN, bldc.GPIO_OUT);
+    pico.gpio.default_led.init(pico.gpio.Gpio.Config{
+        .direction = .out,
+    });
 
     for (0..31) |gpio| {
         stdio.print("io [{}] pwm slice:{} pwm chan:{}\n", .{
