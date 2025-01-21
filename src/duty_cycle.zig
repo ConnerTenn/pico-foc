@@ -21,18 +21,18 @@ pub const DutyCycle = struct {
     pio_high: pio.Pio,
     pio_low: pio.Pio,
 
-    pub fn create(gpio_base: pico.gpio.Pin, gpio_count: pico.gpio.Pin.Count) Self {
+    pub fn create(gpio_base: pico.gpio.Pin, gpio_count: pico.gpio.Pin.Count) pio.Pio.Error!Self {
         // _ = csdk.pio_claim_free_sm_and_add_program_for_gpio_range(program, &pio_obj, &state_machine, &offset, gpio_base, gpio_count, true);
         // const pio = Pio.create(&csdk.duty_cycle_program, gpio_base, gpio_count);
 
         return Self{
-            .pio_high = pio.Pio.create(
+            .pio_high = try pio.Pio.create(
                 @ptrCast(&duty_cycle_pio.high_cycle_program),
                 @ptrCast(&duty_cycle_pio.high_cycle_program_get_default_config),
                 gpio_base,
                 gpio_count,
             ),
-            .pio_low = pio.Pio.create(
+            .pio_low = try pio.Pio.create(
                 @ptrCast(&duty_cycle_pio.low_cycle_program),
                 @ptrCast(&duty_cycle_pio.high_cycle_program_get_default_config),
                 gpio_base,

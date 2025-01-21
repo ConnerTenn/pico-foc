@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(PICO_SDK_PATH "./pico-sdk")
 
-set(PICO_PLATFORM "rp2350")
+set(PICO_PLATFORM "rp2350-arm-s")
 set(PICO_BOARD "pico2")
 
 # set(CMAKE_BUILD_TYPE Debug)
