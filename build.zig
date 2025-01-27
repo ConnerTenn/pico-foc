@@ -26,9 +26,9 @@ pub fn build(build_config: *Build) void {
         .root_source_file = build_config.path("Pico-Zig/pico.zig"),
     });
 
-    const config_options = build_config.addOptions();
-    config_options.addOption(com.PicoTargets, "target", .rp2350);
-    pico_module.addOptions("config", config_options);
+    com.configureOptions(build_config, pico_module, com.Options{
+        .target = .rp2350,
+    });
 
     lib.root_module.addImport("pico", pico_module);
 
