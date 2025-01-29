@@ -1,8 +1,10 @@
 const std = @import("std");
 
+const pico = @import("pico");
+const csdk = pico.csdk;
+const stdio = pico.stdio;
+
 const bldc = @import("bldc.zig");
-const csdk = bldc.csdk;
-const stdio = bldc.stdio;
 
 pub const SPI = struct {
     const Self = @This();

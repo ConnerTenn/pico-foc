@@ -2,10 +2,11 @@ const std = @import("std");
 const math = std.math;
 const tau = math.tau;
 
+const pico = @import("pico");
+const csdk = pico.csdk;
+const stdio = pico.stdio;
+
 const bldc = @import("bldc.zig");
-const csdk = bldc.csdk;
-const stdio = bldc.stdio;
-const pwm = bldc.pwm;
 const foc = bldc.foc;
 
 //Output domain: [-modulo/2, modulo/2]
@@ -29,7 +30,7 @@ pub const Motor = struct {
 
     const num_calibration_samples = 512;
 
-    driver: pwm.PwmDriver,
+    driver: bldc.pwm.PwmDriver,
     windings_per_rotation: u8,
 
     sensor: bldc.sensor.Sensor,
@@ -44,9 +45,9 @@ pub const Motor = struct {
 
     last_time_us: csdk.absolute_time_t = 0,
 
-    pub fn create(u_axis_slice: pwm.Slice, v_axis_slice: pwm.Slice, w_axis_slice: pwm.Slice, windings_per_rotation: u8, sensor: bldc.sensor.Sensor, pid: PIDcontrol) Self {
+    pub fn create(u_axis_slice: pico.pwm.PwmSlice.SliceNum, v_axis_slice: pico.pwm.PwmSlice.SliceNum, w_axis_slice: pico.pwm.PwmSlice.SliceNum, windings_per_rotation: u8, sensor: bldc.sensor.Sensor, pid: PIDcontrol) Self {
         return Self{
-            .driver = pwm.PwmDriver.create(u_axis_slice, v_axis_slice, w_axis_slice),
+            .driver = bldc.pwm.PwmDriver.create(u_axis_slice, v_axis_slice, w_axis_slice),
             .windings_per_rotation = windings_per_rotation,
             .sensor = sensor,
             .pid = pid,

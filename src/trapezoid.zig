@@ -1,5 +1,7 @@
+const pico = @import("pico");
+const csdk = pico.csdk;
+
 const bldc = @import("bldc.zig");
-const csdk = bldc.csdk;
 
 const DriverPins = enum(c_uint) {
     UL = 8,

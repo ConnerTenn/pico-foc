@@ -2,9 +2,11 @@ const std = @import("std");
 const math = std.math;
 const tau = math.tau;
 
+const pico = @import("pico");
+const csdk = pico.csdk;
+const stdio = pico.stdio;
+
 const bldc = @import("bldc.zig");
-const csdk = bldc.csdk;
-const stdio = bldc.stdio;
 
 const expect = @import("std").testing.expect;
 
@@ -35,8 +37,9 @@ export fn main() void {
     printFrequencies();
 
     //Init GPIO
-    csdk.gpio_init(bldc.LED_PIN);
-    csdk.gpio_set_dir(bldc.LED_PIN, bldc.GPIO_OUT);
+    pico.gpio.default_led.init(pico.gpio.Gpio.Config{
+        .direction = .out,
+    });
 
     for (0..31) |gpio| {
         stdio.print("io [{}] pwm slice:{} pwm chan:{}\n", .{
@@ -53,7 +56,10 @@ export fn main() void {
     csdk.gpio_set_function(14, csdk.GPIO_FUNC_PWM); //WL
     csdk.gpio_set_function(15, csdk.GPIO_FUNC_PWM); //WH
 
-    var duty_cycle_sampler = bldc.duty_cycle.DutyCycle.create(19, 1);
+    var duty_cycle_sampler = bldc.duty_cycle.DutyCycle.create(pico.gpio.Pin.create(19), @as(pico.gpio.Pin.Count, 1)) catch |err| {
+        stdio.print("Error:{}\n", .{err});
+        return;
+    };
     duty_cycle_sampler.init();
 
     // while (true) {

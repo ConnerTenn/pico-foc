@@ -6,12 +6,22 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(PICO_SDK_PATH "./pico-sdk")
 
+# set(PICO_PLATFORM "rp2040")
+# set(PICO_PLATFORM "rp2350-riscv")
+set(PICO_PLATFORM "rp2350-arm-s")
+# set(PICO_BOARD "pico")
+set(PICO_BOARD "pico2")
+
+# set(CMAKE_BUILD_TYPE Debug)
+# set(CMAKE_BUILD_TYPE Release)
+# set(CMAKE_BUILD_TYPE MinSizeRel)
+
 include(./pico-sdk/pico_sdk_init.cmake)
 pico_sdk_init()
 
 
 #== Application ==
-project(motor-demo C CXX ASM)
+project($ENV{PROJECT_NAME} C CXX ASM)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 # pico_sdk_init()
 
@@ -27,7 +37,7 @@ pico_generate_pio_header(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/src/duty_cycle.pio)
 
 # Add libraries to the build
 add_library(zig_library STATIC IMPORTED)
-set_property(TARGET zig_library PROPERTY IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/zig-out/lib/libbldc.a)
+set_property(TARGET zig_library PROPERTY IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/zig-out/lib/lib${PROJECT_NAME}.a)
 
 target_link_libraries(${PROJECT_NAME} zig_library pico_stdlib hardware_spi hardware_pio)
 

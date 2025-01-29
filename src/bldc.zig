@@ -1,24 +1,12 @@
 const std = @import("std");
 const math = std.math;
 
-const sdk = @import("sdk-wrapper.zig");
-pub const csdk = sdk.csdk;
-
-pub const stdio = @import("stdio.zig");
 pub const motor = @import("motor.zig");
 pub const pwm = @import("pwm.zig");
 pub const foc = @import("foc.zig");
 pub const sensor = @import("sensor.zig");
 pub const spi = @import("spi.zig");
 pub const duty_cycle = @import("duty_cycle.zig");
-
-pub const GPIO_IN = false;
-pub const GPIO_OUT = true;
-
-pub const GPIO_HIGH = true;
-pub const GPIO_LOW = false;
-
-pub const LED_PIN = csdk.PICO_DEFAULT_LED_PIN;
 
 pub const ModType = enum {
     regular,
