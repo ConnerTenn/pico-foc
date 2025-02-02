@@ -59,10 +59,10 @@ pub const Motor = struct {
 
         self.setTorque(1.0, 0.0, 0);
 
-        //Settling time before measuring the angle bias
-        csdk.sleep_ms(1000);
+        // //Settling time before measuring the angle bias
+        // csdk.sleep_ms(1000);
 
-        self.calibrate();
+        // self.calibrate();
 
         //Update the last time
         self.last_time_us = csdk.get_absolute_time();
@@ -136,40 +136,43 @@ pub const Motor = struct {
         _ = rad_per_sec; // autofix
     }
 
-    pub inline fn update(self: *Self) void {
+    pub const TorqueFn = fn (angle: f32, delta_time_s: f32) f32;
+
+    pub inline fn update(self: *Self, torqueFn: TorqueFn) void {
         const current_time_us = csdk.get_absolute_time();
         const delta_time_us = current_time_us - self.last_time_us;
         const delta_time_s: f32 = @as(f32, @floatFromInt(delta_time_us)) / (1000.0 * 1000.0);
 
         self.state.angle = self.getAngle();
 
-        const target_angle = 0.0 * tau;
-        const repetition = 6.0;
-        const delta_error = deltaError(f32, self.state.angle * repetition, target_angle * repetition, tau);
+        // const target_angle = 0.0 * tau;
+        // const repetition = 6.0;
+        // const delta_error = deltaError(f32, self.state.angle * repetition, target_angle * repetition, tau);
 
-        const torque_fn = struct {
-            fn exponential_sigmoid(delta_err: f32) f32 {
-                return (1.0 - math.pow(f32, 1.2, -@abs(delta_err))) * -math.sign(delta_err);
-            }
+        // const torque_fn = struct {
+        //     fn exponential_sigmoid(delta_err: f32) f32 {
+        //         return (1.0 - math.pow(f32, 1.2, -@abs(delta_err))) * -math.sign(delta_err);
+        //     }
 
-            fn sin(delta_err: f32) f32 {
-                return -math.sin(delta_err / 2.0);
-            }
+        //     fn sin(delta_err: f32) f32 {
+        //         return -math.sin(delta_err / 2.0);
+        //     }
 
-            fn skewed_sin(delta_err: f32) f32 {
-                //https://www.desmos.com/calculator/04fgjt2y2l
-                const skew_param = 2.0;
-                const input_param = bldc.mod(f32, delta_err, tau, .regular) / math.pi - 1.0;
-                const skew = math.pow(f32, @abs(input_param), skew_param) * math.sign(input_param);
-                return -math.sin(tau * (skew + 1.0) / 2.0);
-            }
+        //     fn skewed_sin(delta_err: f32) f32 {
+        //         //https://www.desmos.com/calculator/04fgjt2y2l
+        //         const skew_param = 2.0;
+        //         const input_param = bldc.mod(f32, delta_err, tau, .regular) / math.pi - 1.0;
+        //         const skew = math.pow(f32, @abs(input_param), skew_param) * math.sign(input_param);
+        //         return -math.sin(tau * (skew + 1.0) / 2.0);
+        //     }
 
-            fn pid(delta_err: f32) f32 {
-                return self.pid.update(delta_err, delta_time_s);
-            }
-        }.skewed_sin;
+        //     fn pid(delta_err: f32) f32 {
+        //         return self.pid.update(delta_err, delta_time_s);
+        //     }
+        // }.skewed_sin;
 
-        const torque = torque_fn(delta_error);
+        // const torque = torque_fn(delta_error);
+        const torque = torqueFn(self.state.angle, delta_time_s);
 
         // const phase = bldc.mod(
         //     f32,

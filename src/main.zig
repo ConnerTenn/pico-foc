@@ -111,11 +111,24 @@ fn angleSweep(motor: *bldc.motor.Motor) void {
     }
 }
 
+fn targetAngle(angle: f32, delta_time_s: f32) f32 {
+    _ = delta_time_s; // autofix
+    const delta_err = bldc.motor.deltaError(f32, angle, 0, tau / 64.0);
+    // stdio.print("{d:.3}\n", .{delta_err});
+
+    const dead_zone = 0.01;
+
+    if (@abs(delta_err) < dead_zone) {
+        return 0;
+    }
+    return delta_err * 8.0;
+}
+
 fn angleTargetDemo(motor: *bldc.motor.Motor) noreturn {
     motor.target.velocity = math.tau * 1;
     motor.target.torque = 1;
     while (true) {
-        motor.update();
+        motor.update(targetAngle);
     }
 }
 
