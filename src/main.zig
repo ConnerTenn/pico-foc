@@ -5,6 +5,7 @@ const tau = math.tau;
 const pico = @import("pico");
 const csdk = pico.csdk;
 const stdio = pico.stdio;
+const hardware = pico.hardware;
 
 const bldc = @import("bldc.zig");
 
@@ -37,7 +38,7 @@ export fn main() void {
     printFrequencies();
 
     //Init GPIO
-    pico.gpio.default_led.init(pico.gpio.Gpio.Config{
+    hardware.gpio.default_led.init(hardware.gpio.Gpio.Config{
         .direction = .out,
     });
 
@@ -56,7 +57,7 @@ export fn main() void {
     csdk.gpio_set_function(14, csdk.GPIO_FUNC_PWM); //WL
     csdk.gpio_set_function(15, csdk.GPIO_FUNC_PWM); //WH
 
-    var duty_cycle_sampler = bldc.duty_cycle.DutyCycle.create(pico.gpio.Pin.create(19), @as(pico.gpio.Pin.Count, 1)) catch |err| {
+    var duty_cycle_sampler = pico.library.duty_cycle.DutyCycle.create(hardware.gpio.Pin.create(19), @as(hardware.gpio.Pin.Count, 1)) catch |err| {
         stdio.print("Error:{}\n", .{err});
         return;
     };
@@ -69,12 +70,13 @@ export fn main() void {
 
     // const sensor = bldc.sensor.LIS3MDL.create(18, 19, 16, 17, csdk.spi0_hw);
     const sensor = duty_cycle_sampler.getSensor();
-    const pid = bldc.motor.PIDcontrol.create(
+
+    const pid = pico.library.pid.PIDcontrol.create(
         3.0,
         0.0,
         0.05,
     );
-    var motor = bldc.motor.Motor.create(
+    var motor = pico.library.motor.Motor.create(
         4,
         6,
         7,
@@ -111,11 +113,24 @@ fn angleSweep(motor: *bldc.motor.Motor) void {
     }
 }
 
-fn angleTargetDemo(motor: *bldc.motor.Motor) noreturn {
+fn targetAngle(angle: f32, delta_time_s: f32) f32 {
+    _ = delta_time_s; // autofix
+    const delta_err = pico.math.deltaError(f32, angle, 0, tau / 64.0);
+    // stdio.print("{d:.3}\n", .{delta_err});
+
+    const dead_zone = 0.01;
+
+    if (@abs(delta_err) < dead_zone) {
+        return 0;
+    }
+    return delta_err * 8.0;
+}
+
+fn angleTargetDemo(motor: *pico.library.motor.Motor) noreturn {
     motor.target.velocity = math.tau * 1;
     motor.target.torque = 1;
     while (true) {
-        motor.update();
+        motor.update(targetAngle);
     }
 }
 
