@@ -57,7 +57,7 @@ export fn main() void {
     csdk.gpio_set_function(14, csdk.GPIO_FUNC_PWM); //WL
     csdk.gpio_set_function(15, csdk.GPIO_FUNC_PWM); //WH
 
-    var duty_cycle_sampler = bldc.duty_cycle.DutyCycle.create(hardware.gpio.Pin.create(19), @as(hardware.gpio.Pin.Count, 1)) catch |err| {
+    var duty_cycle_sampler = pico.library.duty_cycle.DutyCycle.create(hardware.gpio.Pin.create(19), @as(hardware.gpio.Pin.Count, 1)) catch |err| {
         stdio.print("Error:{}\n", .{err});
         return;
     };
