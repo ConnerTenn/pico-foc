@@ -70,12 +70,13 @@ export fn main() void {
 
     // const sensor = bldc.sensor.LIS3MDL.create(18, 19, 16, 17, csdk.spi0_hw);
     const sensor = duty_cycle_sampler.getSensor();
-    const pid = bldc.motor.PIDcontrol.create(
+
+    const pid = pico.library.pid.PIDcontrol.create(
         3.0,
         0.0,
         0.05,
     );
-    var motor = bldc.motor.Motor.create(
+    var motor = pico.library.motor.Motor.create(
         4,
         6,
         7,
@@ -114,7 +115,7 @@ fn angleSweep(motor: *bldc.motor.Motor) void {
 
 fn targetAngle(angle: f32, delta_time_s: f32) f32 {
     _ = delta_time_s; // autofix
-    const delta_err = bldc.motor.deltaError(f32, angle, 0, tau / 64.0);
+    const delta_err = pico.math.deltaError(f32, angle, 0, tau / 64.0);
     // stdio.print("{d:.3}\n", .{delta_err});
 
     const dead_zone = 0.01;
@@ -125,7 +126,7 @@ fn targetAngle(angle: f32, delta_time_s: f32) f32 {
     return delta_err * 8.0;
 }
 
-fn angleTargetDemo(motor: *bldc.motor.Motor) noreturn {
+fn angleTargetDemo(motor: *pico.library.motor.Motor) noreturn {
     motor.target.velocity = math.tau * 1;
     motor.target.torque = 1;
     while (true) {

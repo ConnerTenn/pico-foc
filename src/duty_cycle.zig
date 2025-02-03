@@ -8,7 +8,7 @@ const hardware = pico.hardware;
 const pio = hardware.pio;
 
 const bldc = @import("bldc.zig");
-const foc = bldc.foc;
+const foc = pico.library.foc;
 
 const duty_cycle_pio = @cImport({
     @cInclude("duty_cycle.pio.h");
@@ -72,8 +72,8 @@ pub const DutyCycle = struct {
         return ratio;
     }
 
-    pub fn getSensor(self: *Self) bldc.sensor.Sensor {
-        return bldc.sensor.Sensor{
+    pub fn getSensor(self: *Self) pico.library.motor.AngleSensor {
+        return pico.library.motor.AngleSensor{
             .ctx = self,
             .getAngleFn = _getAngle,
         };
