@@ -5,6 +5,7 @@ const tau = math.tau;
 const pico = @import("pico");
 const csdk = pico.csdk;
 const stdio = pico.stdio;
+const hardware = pico.hardware;
 
 const bldc = @import("bldc.zig");
 
@@ -37,7 +38,7 @@ export fn main() void {
     printFrequencies();
 
     //Init GPIO
-    pico.gpio.default_led.init(pico.gpio.Gpio.Config{
+    hardware.gpio.default_led.init(hardware.gpio.Gpio.Config{
         .direction = .out,
     });
 
@@ -56,7 +57,7 @@ export fn main() void {
     csdk.gpio_set_function(14, csdk.GPIO_FUNC_PWM); //WL
     csdk.gpio_set_function(15, csdk.GPIO_FUNC_PWM); //WH
 
-    var duty_cycle_sampler = bldc.duty_cycle.DutyCycle.create(pico.gpio.Pin.create(19), @as(pico.gpio.Pin.Count, 1)) catch |err| {
+    var duty_cycle_sampler = bldc.duty_cycle.DutyCycle.create(hardware.gpio.Pin.create(19), @as(hardware.gpio.Pin.Count, 1)) catch |err| {
         stdio.print("Error:{}\n", .{err});
         return;
     };

@@ -2,7 +2,7 @@ const std = @import("std");
 const math = std.math;
 
 const pico = @import("pico");
-const pwm = pico.pwm;
+const pwm = pico.hardware.pwm;
 const csdk = pico.csdk;
 const stdio = pico.stdio;
 

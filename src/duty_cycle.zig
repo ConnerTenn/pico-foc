@@ -4,7 +4,8 @@ const math = std.math;
 const pico = @import("pico");
 const csdk = pico.csdk;
 const stdio = pico.stdio;
-const pio = pico.pio;
+const hardware = pico.hardware;
+const pio = hardware.pio;
 
 const bldc = @import("bldc.zig");
 const foc = bldc.foc;
@@ -21,7 +22,7 @@ pub const DutyCycle = struct {
     pio_high: pio.Pio,
     pio_low: pio.Pio,
 
-    pub fn create(gpio_base: pico.gpio.Pin, gpio_count: pico.gpio.Pin.Count) pio.Pio.Error!Self {
+    pub fn create(gpio_base: hardware.gpio.Pin, gpio_count: hardware.gpio.Pin.Count) pio.Pio.Error!Self {
         // _ = csdk.pio_claim_free_sm_and_add_program_for_gpio_range(program, &pio_obj, &state_machine, &offset, gpio_base, gpio_count, true);
         // const pio = Pio.create(&csdk.duty_cycle_program, gpio_base, gpio_count);
 
